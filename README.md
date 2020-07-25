@@ -102,3 +102,13 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 ---
 - `large3/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NZ_CP009626.1)
 - `large3/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NZ_CP007696.1)
+
+## Usefull
+
+<p align="center">CIGAR</p>
+
+![](src/CIGAR.png)
+
+<p align="center">Large3</p>
+
+![](src/large3.png)
