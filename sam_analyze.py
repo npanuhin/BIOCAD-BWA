@@ -1,12 +1,24 @@
-# import re
 from string import ascii_uppercase
 import matplotlib.pyplot as plt
-# from random import randint
 from Bio import SeqIO
+# from random import randint
+# import re
+
+
+# Small
+# GRID_SIZE = 1e2
+# MIN_RID_SIZE = 1e2
+# DOT_SKIP_RATE = 1
+# DOT_SIZE = 0.1
+
+# Large
+GRID_SIZE = 1e5
+MIN_RID_SIZE = 1e3
+DOT_SKIP_RATE = 10
+DOT_SIZE = 0.01
+
 
 FONT_SIZE = 9
-DOT_SIZE = 1.5
-
 BITWISE_FLAGS = [
     "template having multiple templates in sequencing (read is paired)",
     "each segment properly aligned according to the aligner (read mapped in proper pair)",
@@ -26,7 +38,8 @@ BITWISE_FLAGS = [
 def prettifyNumber(num):
     return "{:,}".format(num)
 
-def main(query_genome_path, ref_genome_path, sam_file_path):
+
+def main(query_genome_path, ref_genome_path, sam_file_path, output):
 
     for record in SeqIO.parse(query_genome_path, "fasta"):
         query_genome_legnth = len(record.seq)
@@ -44,6 +57,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
     query_genome_name, ref_genome_name = None, None
 
     with open(sam_file_path, 'r', encoding="utf-8") as sam_file:
+
         for line in sam_file:
             if line.startswith('@'):
                 # sam_info.append(line)
@@ -70,7 +84,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
             # Rif
             rid = line[9]
             rid_size = len(rid)
-            if rid_size <= 10000:
+            if rid_size <= MIN_RID_SIZE:
                 continue
 
             # CIGAR
@@ -93,7 +107,6 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
 
             sam_data.append([position, flags, quality, rid_size, actions])
 
-
     sam_data.sort(key=lambda item: item[2])
 
     # fig, plot = plt.subplots()
@@ -104,12 +117,13 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
     plt.rc("ytick", labelsize=FONT_SIZE)         # fontsize of the tick labels
     plt.rc("legend", fontsize=FONT_SIZE)         # legend fontsize
     plt.rc("figure", titlesize=FONT_SIZE)        # fontsize of the figure title
-    plt.ticklabel_format(style = "plain")
-    plt.xticks(list(range(0, int(1e7), int(1e5))))
-    plt.yticks(list(range(0, int(1e7), int(1e5))))
-    plt.grid(which="major", linestyle='-', linewidth="0.5", color="red")
+    plt.ticklabel_format(style="plain")
+    plt.xticks(list(range(0, int(GRID_SIZE * 100), int(GRID_SIZE))))
+    plt.yticks(list(range(0, int(GRID_SIZE * 100), int(GRID_SIZE))))
+    plt.xticks(rotation=30)
+    plt.grid(which="major", linestyle='-', linewidth="1", alpha=0.1, color="black")
     # plt.minorticks_on()
-    plt.grid(which="minor", linestyle=':', linewidth="0.5", color="black")
+    # plt.grid(which="minor", linestyle=':', linewidth="1", color="black")
     plt.xlabel(query_genome_name)
     plt.ylabel(ref_genome_name)
     # plot.vlines(2, y.min(), y.max(), color = 'r')  # Вертикальные линии
@@ -149,19 +163,16 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
 
             elif action_type == 'I':
                 for i in range(length):
-                    cur_dots.append([cur_ref_pos, cur_query_pos])
                     # cur_query_pos += 1
                     cur_ref_pos += 1
 
             elif action_type == 'D':
                 for i in range(length):
-                    cur_dots.append([cur_ref_pos, cur_query_pos])
                     cur_query_pos += 1
                     # cur_ref_pos += 1
 
             else:
                 raise "Unknown action type"
-
 
         if 4 in flags:
             for i in range(len(cur_dots)):
@@ -179,12 +190,19 @@ def main(query_genome_path, ref_genome_path, sam_file_path):
 
         print()
 
-    dots = dots[::100]
+    dots = dots[::DOT_SKIP_RATE]
 
     print("Dots count:", len(dots))
 
     plt.scatter(*zip(*dots), s=DOT_SIZE).set_label('')
-    plt.show()
+    plt.tight_layout()
+
+    if output is None:
+        print("Showing plot...")
+        plt.show()
+    else:
+        print("Saving plot...")
+        plt.savefig(output, dpi=200)
 
 
 # ---SETTINGS--- #
@@ -193,7 +211,10 @@ query_genome_path = "samples/large3/large_genome1.fasta"
 ref_genome_path = "samples/large3/large_genome2.fasta"
 sam_file_path = "BWA/large3/bwa_output.sam"
 
+# output = None
+output = "tests/large3/sam_analyze.png"
+
 # ---SETTINGS--- #
 
 if __name__ == "__main__":
-    main(query_genome_path, ref_genome_path, sam_file_path)
+    main(query_genome_path, ref_genome_path, sam_file_path, output)

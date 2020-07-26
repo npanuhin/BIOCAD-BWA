@@ -105,10 +105,14 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 
 ## Usefull
 
+https://ru.wikipedia.org/wiki/SAMtools
+
+https://en.wikipedia.org/wiki/SAM_(file_format)
+
+http://bio-bwa.sourceforge.net/bwa.shtml#3
+
+http://bio-bwa.sourceforge.net/bwa.shtml#4
+
 <p align="center">CIGAR</p>
 
 ![](src/CIGAR.png)
-
-<p align="center">Large3</p>
-
-![](src/large3.png)
