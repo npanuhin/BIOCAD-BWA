@@ -105,6 +105,8 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 
 ## Usefull
 
+https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform
+
 https://ru.wikipedia.org/wiki/SAMtools
 
 https://en.wikipedia.org/wiki/SAM_(file_format)
