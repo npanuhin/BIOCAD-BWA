@@ -1,6 +1,8 @@
 from string import ascii_uppercase
 import matplotlib.pyplot as plt
 from Bio import SeqIO
+from matplotlib.patches import ConnectionStyle
+import matplotlib.lines as mlines
 # from random import randint
 # import re
 
@@ -10,12 +12,14 @@ from Bio import SeqIO
 # MIN_RID_SIZE = 1e2
 # DOT_SKIP_RATE = 1
 # DOT_SIZE = 0.1
+# MIN_EVENT_SIZE = 0
 
 # Large
 GRID_SIZE = 1e5
 MIN_RID_SIZE = 1e3
 DOT_SKIP_RATE = 10
 DOT_SIZE = 0.01
+MIN_EVENT_SIZE = 500
 
 
 FONT_SIZE = 9
@@ -34,9 +38,24 @@ BITWISE_FLAGS = [
     "supplementary alignment (e.g. aligner specific, could be a portion of a split read or a tied region)"
 ]
 
+# ---SETTINGS--- #
+
+query_genome_path = "samples/large3/large_genome1.fasta"
+ref_genome_path = "samples/large3/large_genome2.fasta"
+sam_file_path = "BWA/large3/bwa_output.sam"
+
+# output = None
+output = "tests/large3/sam_analyze.png"
+
+# ---SETTINGS--- #
+
 
 def prettifyNumber(num):
     return "{:,}".format(num)
+
+
+def drawline(fig, p1, p2):
+    fig.add_artist(mlines.Line2D(p1, p2))
 
 
 def main(query_genome_path, ref_genome_path, sam_file_path, output):
@@ -129,6 +148,9 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output):
     # plot.vlines(2, y.min(), y.max(), color = 'r')  # Вертикальные линии
     # plot.hlines(-4, -5, 5)  # Горизонтальные динии
 
+    connectionstyle_I = ConnectionStyle("Angle3", angleA=90, angleB=0)
+    connectionstyle_D = ConnectionStyle("Angle3", angleA=0, angleB=90)
+
     dots = []
 
     for position, flags, quality, rid_size, actions in sam_data:
@@ -162,14 +184,34 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output):
                     cur_ref_pos += 1
 
             elif action_type == 'I':
-                for i in range(length):
-                    # cur_query_pos += 1
-                    cur_ref_pos += 1
+                if length >= MIN_EVENT_SIZE:
+                    plt.plot([cur_ref_pos, cur_ref_pos + 50], [cur_query_pos, cur_query_pos], color="green")
+                    plt.plot([cur_ref_pos, cur_ref_pos + 50], [cur_query_pos + length, cur_query_pos + length], color="green")
+                    plt.plot([cur_ref_pos + 50, cur_ref_pos + 50], [cur_query_pos + length, cur_query_pos], color="green")
+
+                    plt.annotate("insertion", xy=(cur_ref_pos + 50, cur_query_pos + length / 2),
+                                 arrowprops=dict(arrowstyle="-", connectionstyle=connectionstyle_I, color="green"),
+                                 xycoords='data',
+                                 xytext=(10, -20),
+                                 color="green",
+                                 textcoords='offset points'
+                                 )
+                cur_query_pos += length
 
             elif action_type == 'D':
-                for i in range(length):
-                    cur_query_pos += 1
-                    # cur_ref_pos += 1
+                if length >= MIN_EVENT_SIZE:
+                    plt.plot([cur_ref_pos, cur_ref_pos], [cur_query_pos, cur_query_pos - 50], color="red")
+                    plt.plot([cur_ref_pos + length, cur_ref_pos + length], [cur_query_pos, cur_query_pos - 50], color="red")
+                    plt.plot([cur_ref_pos + length, cur_ref_pos], [cur_query_pos - 50, cur_query_pos - 50], color="red")
+
+                    plt.annotate("deletion", xy=(cur_ref_pos + length / 2, cur_query_pos - 50),
+                                 arrowprops=dict(arrowstyle="-", connectionstyle=connectionstyle_D, color="red"),
+                                 xycoords='data',
+                                 xytext=(10, -20),
+                                 color="red",
+                                 textcoords='offset points'
+                                 )
+                cur_ref_pos += length
 
             else:
                 raise "Unknown action type"
@@ -204,17 +246,6 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output):
         print("Saving plot...")
         plt.savefig(output, dpi=200)
 
-
-# ---SETTINGS--- #
-
-query_genome_path = "samples/large3/large_genome1.fasta"
-ref_genome_path = "samples/large3/large_genome2.fasta"
-sam_file_path = "BWA/large3/bwa_output.sam"
-
-# output = None
-output = "tests/large3/sam_analyze.png"
-
-# ---SETTINGS--- #
 
 if __name__ == "__main__":
     main(query_genome_path, ref_genome_path, sam_file_path, output)
