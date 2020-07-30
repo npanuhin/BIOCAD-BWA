@@ -11,7 +11,7 @@ printf "First file indexed\n\n"
 bwa index -a "is" "bwa_genome2.fasta"
 printf "Second file indexed\n\n"
 
-bwa mem -w 1000 -o "bwa_output.sam" "bwa_genome1.fasta" "bwa_genome2.fasta"
+bwa mem -o "bwa_output.sam" "bwa_genome1.fasta" "bwa_genome2.fasta"
 # bwa bwasw -N 1 -f "bwa_output.sam" "bwa_genome1.fasta" "bwa_genome2.fasta"
 printf "Aligned (.sam)\n\n"
 

@@ -2,67 +2,10 @@
 
 > This repository is not intended to represent work, but rather to store and transmit information.
 
-## Result
-
 For `SAM` and `pairwise` files *word wrap* should be disabled
 
-- Small:
 
-	[**source fasta**](./samples/small/source.fasta)
-
-	- deletion
-		- [**deletion fasta**](./samples/small/deletion.fasta)
-		- [**SAM**](./BWA/small/deletion/bwa_output.sam)
-		- [**BAM**](./BWA/small/deletion/bwa_output.bam)
-		- [**pairwise**](./BWA/small/deletion/bwa_output_pairwise.txt)
-
-	- insertion
-		- [**insertion fasta**](./samples/small/insertion.fasta)
-		- [**SAM**](./BWA/small/insertion/bwa_output.sam)
-		- [**BAM**](./BWA/small/insertion/bwa_output.bam)
-		- [**pairwise**](./BWA/small/insertion/bwa_output_pairwise.txt)
-
-	- inversion
-		- [**inversion fasta**](./samples/small/inversion.fasta)
-		- [**SAM**](./BWA/small/inversion/bwa_output.sam)
-		- [**BAM**](./BWA/small/inversion/bwa_output.bam)
-		- [**pairwise**](./BWA/small/inversion/bwa_output_pairwise.txt)
-
-	- inversion2
-		- [**inversion2 fasta**](./samples/small/inversion2.fasta)
-		- [**SAM**](./BWA/small/inversion2/bwa_output.sam)
-		- [**BAM**](./BWA/small/inversion2/bwa_output.bam)
-		- [**pairwise**](./BWA/small/inversion2/bwa_output_pairwise.txt)
-
-	- translocation
-		- [**translocation fasta**](./samples/small/translocation.fasta)
-		- [**SAM**](./BWA/small/translocation/bwa_output.sam)
-		- [**BAM**](./BWA/small/translocation/bwa_output.bam)
-		- [**pairwise**](./BWA/small/translocation/bwa_output_pairwise.txt)
-
-- Large1:
-	- [**genome1 fasta**](./samples/large1/large_genome1.fasta)
-	- [**genome2 fasta**](./samples/large1/large_genome2.fasta)
-	- [**SAM**](./BWA/large1/bwa_output.sam)
-	- [**BAM**](./BWA/large1/bwa_output.bam)
-	- [**pairwise**](./BWA/large1/bwa_output_pairwise.txt)
-
-- Large2:
-	- [**genome1 fasta**](./samples/large2/large_genome1.fasta)
-	- [**genome2 fasta**](./samples/large2/large_genome2.fasta)
-	- [**SAM**](./BWA/large2/bwa_output.sam)
-	- [**BAM**](./BWA/large2/bwa_output.bam)
-	- [**pairwise**](./BWA/large2/bwa_output_pairwise.txt)
-
-- Large3:
-	- [**genome1 fasta**](./samples/large3/large_genome1.fasta)
-	- [**genome2 fasta**](./samples/large3/large_genome2.fasta)
-	- [**SAM**](./BWA/large3/bwa_output.sam)
-	- [**BAM**](./BWA/large3/bwa_output.bam)
-	- [**pairwise**](./BWA/large3/bwa_output_pairwise.txt)
-
-
-## Stages
+### Stages
 
 1. **BWA** indexes two `fasta` sequences
 2. **BWA** aligns these two sequences
@@ -71,7 +14,7 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 5. **sam2pairwise** converts `sam` file to *pairwise* (`txt` file)
 
 
-## Requirements
+### Requirements
 
 - **BWA**: http://bio-bwa.sourceforge.net
 - **Samtools**: https://www.htslib.org
@@ -80,19 +23,12 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 `sudo apt install bwa samtools`
 
 
-## Run
+### How to run BWA
 
-###### Basic
+1. Navigate to `BWA/` folder
+2. Run `./run_all.sh`
 
-- Navigate to `BWA/small/{...}` or `BWA/large{N}` folder
-- Run `./run.sh`
-
-###### Pairwise
-
-`sam2pairwise < bwa_output.sam > bwa_output_pairwise.txt`
-
-
-## Contents
+### Contents
 
 - `large1/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/CP003305.1)
 - `large1/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/CP000766.3)
@@ -102,8 +38,21 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 ---
 - `large3/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NZ_CP009626.1)
 - `large3/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NZ_CP007696.1)
+---
+- `large4/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/CP002079)
+- `large4/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/AM040265.1)
+---
+- `large5/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/864354655)
+- `large5/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/15603881)
+---
+- `large6/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/134045046)
+- `large6/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/CP002913.1)
+---
+- `large7/large_genome1.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NC_015758.1)
+- `large7/large_genome2.fasta`: [NCBI](https://www.ncbi.nlm.nih.gov/nuccore/NC_016946.1)
 
-## Usefull
+
+### Usefull
 
 https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform
 
