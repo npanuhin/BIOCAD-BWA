@@ -8,7 +8,7 @@ sam_analyze.GRID_SIZE = 1e2
 sam_analyze.MIN_RID_SIZE = 1
 sam_analyze.DOT_SKIP_RATE = 1
 sam_analyze.DOT_SIZE = 0.1
-sam_analyze.MIN_EVENT_SIZE = 0
+sam_analyze.MIN_EVENT_SIZE = 1
 
 os.chdir("../")
 
@@ -18,7 +18,7 @@ for foldername in os.listdir("tests/small"):
         query_genome_path="samples/small/source.fasta",
         ref_genome_path="samples/small/{}.fasta".format(foldername),
         sam_file_path="BWA/small/{}/bwa_output.sam".format(foldername),
-        output_to_file=True,
+        show_plot=False,
         output_folder="tests/small/{}".format(foldername)
     )
 
@@ -37,6 +37,6 @@ for foldername in os.listdir("tests"):
         query_genome_path="samples/{}/large_genome1.fasta".format(foldername),
         ref_genome_path="samples/{}/large_genome2.fasta".format(foldername),
         sam_file_path="BWA/{}/bwa_output.sam".format(foldername),
-        output_to_file=True,
+        show_plot=False,
         output_folder="tests/{}".format(foldername)
     )

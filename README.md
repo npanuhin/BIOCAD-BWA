@@ -11,7 +11,7 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 2. **BWA** aligns these two sequences
 3. **samtools** converts `sam` file to `bam` file (*currently optional*)
 4. **samtools** sorts `bam` file (*currently optional*)
-5. **sam2pairwise** converts `sam` file to *pairwise* (`txt` file)
+5. **sam2pairwise** converts `sam` file to *pairwise* (`txt` file) (*currently optional*)
 
 
 ### Requirements
@@ -22,11 +22,6 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 
 `sudo apt install bwa samtools`
 
-
-### How to run BWA
-
-1. Navigate to `BWA/` folder
-2. Run `./run_all.sh`
 
 ### Contents
 
