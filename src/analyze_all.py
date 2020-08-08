@@ -4,18 +4,25 @@ sys_path.append("../")
 
 import sam_analyze2 as sam_analyze
 
+
+def mkpath(*paths):
+    return os.path.normpath(os.path.join(*paths))
+
+
+# Small:
+
 sam_analyze.GRID_SIZE = 1e2
 sam_analyze.MIN_RID_SIZE = 1
 sam_analyze.DOT_SKIP_RATE = 1
 sam_analyze.DOT_SIZE = 0.1
-sam_analyze.MIN_EVENT_SIZE = 8
+sam_analyze.MIN_EVENT_SIZE = 3
 sam_analyze.ROTATION_JOIN_SIZE = 1e1
 sam_analyze.LINES_JOIN_SIZE = 1e1
 sam_analyze.LINE_MIN_SIZE = 1e1
 
 os.chdir("../")
 
-for foldername in os.listdir("tests/small"):
+for foldername in os.listdir(mkpath("tests", "small")):
 
     sam_analyze.main(
         query_genome_path="samples/small/source.fasta",
@@ -25,6 +32,8 @@ for foldername in os.listdir("tests/small"):
         output_folder="tests/small/{}".format(foldername)
     )
 
+
+# Large:
 
 sam_analyze.GRID_SIZE = 1e5
 sam_analyze.MIN_RID_SIZE = 1e3
@@ -36,7 +45,7 @@ sam_analyze.LINES_JOIN_SIZE = 1e3
 sam_analyze.LINE_MIN_SIZE = 1e1
 
 for foldername in os.listdir("tests"):
-    if foldername.strip("/").strip("\\") == "small":
+    if not os.path.isdir(mkpath("tests", foldername)) or foldername.strip("/").strip("\\") == "small":
         continue
 
     sam_analyze.main(

@@ -1,10 +1,9 @@
 from string import ascii_uppercase
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 # from matplotlib.patches import ConnectionStyle
-# import matplotlib.lines as mlines
 import os
-# from random import randint
 
 INT_MAX = int(1e9) + 7
 
@@ -16,7 +15,7 @@ INT_MAX = int(1e9) + 7
 # MIN_RID_SIZE = 1
 # DOT_SKIP_RATE = 1
 # DOT_SIZE = 0.1
-# MIN_EVENT_SIZE = 8
+# MIN_EVENT_SIZE = 3
 # ROTATION_JOIN_SIZE = 1e1
 # LINES_JOIN_SIZE = 1e1
 # LINE_MIN_SIZE = 1e1
@@ -53,11 +52,11 @@ CIGAR_FLAGS = [
 
 # ---SETTINGS--- #
 
-query_genome_path = "samples/large2/large_genome1.fasta"
-ref_genome_path = "samples/large2/large_genome2.fasta"
-sam_file_path = "BWA/large2/bwa_output.sam"
+query_genome_path = "samples/large3/large_genome1.fasta"
+ref_genome_path = "samples/large3/large_genome2.fasta"
+sam_file_path = "BWA/large3/bwa_output.sam"
 show_plot = True
-output_folder = "tests/large2"
+output_folder = "tests/large3"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/duplication.fasta"
@@ -76,16 +75,16 @@ def prettifyNumber(num):
     return "{:,}".format(num)
 
 
-def equalE(value1, value2, E):
-    '''Epsilon comparison'''
-    return value1 - E < value2 < value1 + E
+# def equalE(value1, value2, E):
+#     '''Epsilon comparison'''
+#     return value1 - E < value2 < value1 + E
 
 
 def distance2(x1, y1, x2, y2):
-    return abs(x1 - x2) ** 2 + abs(y1 - y2) ** 2
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
 
-def dotYOnLine(x1, y1, x2, y2, target_x):
+def dotOnLineY(x1, y1, x2, y2, target_x):
     return y1 + (y2 - y1) * ((target_x - x1) / (x2 - x1))
 
 
@@ -125,8 +124,16 @@ class Plot:
     def line(self, x1, y1, x2, y2, *args, **kwargs):
         self.ax.plot([x1, x2], [y1, y2], *args, **kwargs)
 
-    def save(self, path):
-        self.fig.savefig(path, dpi=400)
+    def legendLine(self, legend_dict, fontsize=FONT_SIZE, *line_args, **line_kwargs):
+        legend_objects, legend_names = [], []
+        for name in legend_dict:
+            legend_names.append(name)
+            legend_objects.append(Line2D([0], [0], color=legend_dict[name], *line_args, **line_kwargs))
+
+        self.ax.legend(legend_objects, legend_names, fontsize=fontsize)
+
+    def save(self, path, *args, **kwargs):
+        self.fig.savefig(path, dpi=400, *args, **kwargs)
 
     def close(self):
         plt.close(self.fig)
@@ -135,32 +142,26 @@ class Plot:
 def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder):
 
     with open(query_genome_path, 'r', encoding="utf-8") as file:
-        for _, sequence in SimpleFastaParser(file):
+        for name, sequence in SimpleFastaParser(file):
+            query_genome_name = name
             query_genome_length = len(sequence)
             break
 
     with open(ref_genome_path, 'r', encoding="utf-8") as file:
-        for _, sequence in SimpleFastaParser(file):
+        for name, sequence in SimpleFastaParser(file):
+            ref_genome_name = name
             ref_genome_length = len(sequence)
             break
 
-    print("query_genome_length: ", query_genome_length)
-    print("ref_genome_length: ", ref_genome_length)
+    print("Query: {} [{}]".format(query_genome_name, query_genome_length))
+    print("Reference: {} [{}]".format(ref_genome_name, ref_genome_length))
     print()
 
-    # sam_info = []
     sam_data = []
-    query_genome_name, ref_genome_name = None, None
 
     with open(sam_file_path, 'r', encoding="utf-8") as sam_file:
 
-        for line in sam_file:
-            if line.startswith('@'):
-                # sam_info.append(line)
-                continue
-
-            line = line.split()
-
+        for line in (line.strip().split() for line in sam_file if not line.strip().startswith("@")):
             # Quality
             # mapQ = int(line[4])
             # quality = round((10 ** (mapQ / -10)) * 100, 6)
@@ -178,8 +179,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             flags.sort()
 
             # Rid
-            rid = line[9]
-            rid_size = len(rid)
+            rid_size = len(line[9])
             if rid_size <= MIN_RID_SIZE:
                 continue
 
@@ -187,23 +187,14 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             cigar = line[5]
             actions = []
             buff = ""
-            for i in range(len(cigar)):
-                if cigar[i] in ascii_uppercase:
-                    actions.append([int(buff), cigar[i]])
-                    # print("{}-{}|".format(buff, actions[i]), end="")
+            for char in cigar:
+                if char in ascii_uppercase:
+                    actions.append([int(buff), char])
                     buff = ""
                 else:
-                    buff += cigar[i]
-
-            # Names
-            if ref_genome_name is None:
-                ref_genome_name = line[0]
-            if query_genome_name is None:
-                query_genome_name = line[2]
+                    buff += char
 
             sam_data.append([position, flags, rid_size, actions])
-
-    # sam_data.sort(key=lambda item: item[2])
 
     # return
 # ========================================================================================================================================
@@ -211,19 +202,10 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
     bwa_actions = []
 
     for position, flags, rid_size, actions in sam_data:
-        print("{} -> {}".format(prettifyNumber(position), prettifyNumber(position + rid_size)))
-        for flag in flags:
-            # if flag == 11:  # Currently flag №11 is disabled for showing
-            #     continue
-            print(CIGAR_FLAGS[flag])
 
-        # for length, action_type in actions:
-        #     print("{}-{}|".format(length, action_type), end="")
-        # print()
-
+        start_query_pos, start_ref_pos, end_query_pos, end_ref_pos = INT_MAX, INT_MAX, 0, 0
         cur_query_pos = position
         cur_ref_pos = 0
-        start_query_pos, start_ref_pos, end_query_pos, end_ref_pos = INT_MAX, INT_MAX, 0, 0
 
         for length, action_type in actions:
 
@@ -252,14 +234,25 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             else:
                 raise "Unknown action type"
 
-        rotation_center = None
-        if 4 in flags:
-            rotation_center = (start_ref_pos + end_ref_pos) / 2
+        print("{} -> {}".format(prettifyNumber(start_query_pos), prettifyNumber(end_query_pos)))
+        # for flag in flags:
+        #     if flag == 11:  # Disable flag №11
+        #         continue
+        #     print(CIGAR_FLAGS[flag])
+
+        # for length, action_type in actions:
+        #     print("{}-{}|".format(length, action_type), end="")
+        # print()
+
+        rotation_center = ((start_ref_pos + end_ref_pos) / 2) if 4 in flags else None
 
         cur_query_pos = position
         cur_ref_pos = 0
 
         for length, action_type in actions:
+
+            if action_type not in ('S', 'H'):
+                bwa_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
 
             if action_type == 'S':
                 cur_ref_pos += length
@@ -268,19 +261,14 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
                 cur_ref_pos += length
 
             elif action_type == 'M':
-                bwa_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_query_pos += length
                 cur_ref_pos += length
 
             elif action_type == 'I':
-                bwa_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_ref_pos += length
 
             elif action_type == 'D':
-                bwa_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_query_pos += length
-
-        print()
 
     # return
 # ========================================================================================================================================
@@ -288,23 +276,15 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     rotations = []
 
-    def getActionRefEnd(action):
-        start_query_pos, start_ref_pos, length, action_type, rotation_center = action
-        if action_type == 'M':
-            return start_ref_pos + length
-        elif action_type == 'I':
-            return start_ref_pos
-        elif action_type == 'D':
-            return start_ref_pos + length
-
     def getActionQueryEnd(action):
-        start_query_pos, start_ref_pos, length, action_type, rotation_center = action
-        if action_type == 'M':
-            return start_query_pos + length
-        elif action_type == 'I':
-            return start_query_pos + length
-        elif action_type == 'D':
-            return start_query_pos
+        if action[3] in ('M', 'I'):
+            return action[0] + action[2]
+        return action[0]
+
+    def getActionRefEnd(action):
+        if action[3] in ('M', 'D'):
+            return action[0] + action[2]
+        return action[0]
 
     bwa_actions.sort(key=lambda action: action[0])
 
@@ -347,11 +327,19 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     # return
 # ========================================================================================================================================
+    # Create dots
 
     bwa_actions.sort(key=lambda action: action[0])
 
     plot = Plot("Main", query_genome_name, ref_genome_name)
-    last_query_end, last_ref_end, last_rotated_ref_end = None, None, None
+    plot.legendLine({
+        "Insertion": "#0f0",
+        "Deletion": "#f00",
+        "Duplication": "#f0f",
+        "Back Duplication": "#0ff"
+    }, lw=2)
+
+    last_query_end, last_ref_end = None, None
     dots, ghost_dots, rotated_dots = [], [], []
 
     graph = [[] for _ in range(query_genome_length + 1)]
@@ -366,83 +354,28 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
         else:
             rotated = lambda cur_ref_pos: (ref_genome_length - cur_ref_pos) + ((ref_genome_length - rotation_center) - (ref_genome_length - cur_ref_pos)) * 2
 
-        # if action_index > 0:
-        #     ref_gap = last_rotated_ref_end - rotated(cur_ref_pos)
-        #     # print(last_rotated_ref_end, rotated(cur_ref_pos), ref_gap)
-        #     query_gap = cur_query_pos - last_query_end
-
-        #     # The opposite gap !!!
-
-        #     if abs(query_gap) + abs(ref_gap) > 0:
-
-        #         color_pos = abs(ref_gap) / (abs(query_gap) + abs(ref_gap))
-
-        #         plot.line(last_query_end, last_rotated_ref_end, cur_query_pos, rotated(cur_ref_pos), color=(1 - color_pos, color_pos, 0))
-
-        #         # plot.ax.arrow(last_query_end, last_rotated_ref_end, (cur_query_pos - last_query_end), (rotated(cur_ref_pos) - last_rotated_ref_end),
-        #         #               length_includes_head=True, head_width=10, head_length=1000, color=(1 - color_pos, color_pos, 0))
-
-        #     # if query_gap > ref_gap and query_gap > 1:
-
-        #     #     # if ref_gap >= MIN_EVENT_SIZE:
-        #     #     #     large_actions.append(['D', last_query_end, last_ref_end, cur_ref_pos - last_ref_end])
-
-        #     #     plot.line(last_query_end, last_ref_end, cur_query_pos, cur_ref_pos, color="#f00")
-
-        #     # elif ref_gap > 1:
-
-        #     #     # if query_gap >= MIN_EVENT_SIZE:
-        #     #     #     large_actions.append(['I', last_query_end, last_ref_end, cur_query_pos - last_query_end])
-
-        #     #     plot.line(last_query_end, last_ref_end, cur_query_pos, cur_ref_pos, color="#0f0")
-
-        #     if abs(query_gap) >= MIN_EVENT_SIZE:
-
-        #         # Query:
-        #         if query_gap > 0:
-        #             large_actions.append(['D', last_query_end, last_ref_end, query_gap])  # Insertion
-        #         elif query_gap < 0:
-        #             large_actions.append(['L', last_query_end, last_ref_end, query_gap, abs(ref_gap)])  # Duplication  # abs?
-
-        #     if abs(ref_gap) >= MIN_EVENT_SIZE:
-
-        #         # if 40000 <= last_query_end <= 75000:
-        #         #     print("YES") # - (8)8888
-
-        #         # Ref:
-        #         # print(last_query_end, last_ref_end, last_rotated_ref_end, rotated(cur_ref_pos), ref_gap)
-        #         if ref_gap > 0:
-        #             large_actions.append(['I', last_query_end, last_ref_end, ref_gap])
-        #         elif ref_gap < 0:
-        #             large_actions.append(['I', last_query_end, last_ref_end, ref_gap])
-
         if action_type == 'M':
             for i in range(length):
                 if rotation_center is None:
                     dots.append([cur_query_pos, cur_ref_pos])
-                    rotated_dots.append([cur_query_pos, cur_ref_pos])
                 else:
                     dots.append([cur_query_pos, ref_genome_length - cur_ref_pos])
-                    rotated_dots.append([cur_query_pos, rotated(cur_ref_pos)])
                     ghost_dots.append([cur_query_pos, rotated(cur_ref_pos)])
 
+                rotated_dots.append([cur_query_pos, rotated(cur_ref_pos)])
                 graph[cur_query_pos].append(int(rotated(cur_ref_pos)))
 
                 cur_query_pos += 1
                 cur_ref_pos += 1
 
         elif action_type == 'I':
-            # plot.line(cur_query_pos, rotated(cur_ref_pos), cur_query_pos, rotated(cur_ref_pos) + length, color="#0f0")
             cur_ref_pos += length
 
         elif action_type == 'D':
-            # plot.line(cur_query_pos, rotated(cur_ref_pos), cur_query_pos + length, rotated(cur_ref_pos), color="#f00")
             cur_query_pos += length
 
         if last_query_end is None or cur_query_pos >= last_query_end:
-            # last_ref_end = cur_ref_pos
             last_query_end = cur_query_pos
-            # last_rotated_ref_end = rotated(cur_ref_pos)
 
     dots = dots[::DOT_SKIP_RATE]
     ghost_dots = ghost_dots[::DOT_SKIP_RATE]
@@ -450,12 +383,9 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     print("Dots count: {} + {}".format(prettifyNumber(len(dots)), prettifyNumber(len(ghost_dots))))
 
-    # plot.scatter(dots)
-    # if ghost_dots:
-    #     plot.scatter(ghost_dots, color="#ccc")
-
     # return
 # ========================================================================================================================================
+    # Count lines
 
     print("Counting lines...")
 
@@ -480,10 +410,11 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     lines = [line for line in lines if distance2(line[0], line[1], line[2], line[3]) >= LINE_MIN_SIZE2]
 
-    print(len(lines))
+    print("{} lines".format(len(lines)))
 
     # return
 # ========================================================================================================================================
+    # Handle events
 
     large_actions = []
 
@@ -510,10 +441,10 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             if deletion_length >= MIN_EVENT_SIZE:
                 large_actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
 
-            plot.line(last_query_end, last_ref_end, cur_query_start, last_ref_end, color="#f00")
+            plot.line(last_query_end, cur_ref_start, cur_query_start, cur_ref_start, color="#f00")
 
         elif cur_query_start < last_query_end and cur_ref_start >= last_ref_end:  # top left
-            insertion_length = dotYOnLine(*cur_line[:4], last_query_end) - last_ref_end
+            insertion_length = dotOnLineY(*cur_line[:4], last_query_end) - last_ref_end
             duplication_length = last_query_end - cur_query_start
 
             if insertion_length >= MIN_EVENT_SIZE:
@@ -555,12 +486,24 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
     # Save and show main plot
 
     plot.fig.tight_layout()
-    print("Saving plot...")
+    print("Saving plot...\n")
     plot.save(mkpath(output_folder, "sam_analyze.png"))
 
     if show_plot:
-        print("Showing plot...")
+        print("Showing plot...\n")
         plt.show()
+
+    del plot
+
+    plot = Plot("Main (dots)", query_genome_name, ref_genome_name)
+
+    plot.scatter(dots)
+    if ghost_dots:
+        plot.scatter(ghost_dots, color="#ccc")
+
+    plot.fig.tight_layout()
+    print("Saving dot plot...\n")
+    plot.save(mkpath(output_folder, "sam_analyze (dot plot).png"))
 
     del plot
 
@@ -576,10 +519,12 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     large_actions = [["Pass", 0, 0, 0]] + large_actions
 
+    print("History size: {} images\n".format(len(large_actions)))
+
     for action_index in range(len(large_actions)):
         action = large_actions[action_index]
         print(action)
-        action_type, start_query_pos, start_ref_pos, length = action[0:4]  # length - направленная длина!!! (уже нет) наверное
+        action_type, start_query_pos, start_ref_pos, length = action[0:4]  # length - направленная длина!!! (уже нет) наверное, но это не точно
 
         action_plot = Plot("large_action{}".format(action_index + 1), nameX=query_genome_name, nameY=ref_genome_name)
 
@@ -611,7 +556,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
             for line in lines:
                 for i in range(len(line[4])):
-                    if line[4][i][0] > start_query_pos:
+                    if line[4][i][0] >= start_query_pos:
                         line[4][i][1] -= length
 
             for i in range(action_index + 1, len(large_actions)):
@@ -665,7 +610,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
         action_plot.fig.tight_layout()
         print("Saving large action #{}...\n".format(action_index))
-        action_plot.save(mkpath(output_folder, "history", str(action_index) + ".png"))
+        action_plot.save(mkpath(output_folder, "history", str(action_index).zfill(3) + ".png"))
         action_plot.close()
 
 
