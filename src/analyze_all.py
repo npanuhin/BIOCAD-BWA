@@ -11,14 +11,14 @@ def mkpath(*paths):
 
 # Small:
 
-sam_analyze.GRID_SIZE = 1e2
+sam_analyze.GRID_SIZE = 100
 sam_analyze.MIN_RID_SIZE = 1
 sam_analyze.DOT_SKIP_RATE = 1
 sam_analyze.DOT_SIZE = 0.1
 sam_analyze.MIN_EVENT_SIZE = 3
-sam_analyze.ROTATION_JOIN_SIZE = 1e1
-sam_analyze.LINES_JOIN_SIZE = 1e1
-sam_analyze.LINE_MIN_SIZE = 1e1
+sam_analyze.ROTATION_JOIN_SIZE = 10
+sam_analyze.LINES_JOIN_SIZE = 10
+sam_analyze.LINE_MIN_SIZE = 10
 
 os.chdir("../")
 
@@ -35,17 +35,20 @@ for foldername in os.listdir(mkpath("tests", "small")):
 
 # Large:
 
-sam_analyze.GRID_SIZE = 1e5
-sam_analyze.MIN_RID_SIZE = 1e3
+sam_analyze.GRID_SIZE = int(1e5)
+sam_analyze.MIN_RID_SIZE = int(1e3)
 sam_analyze.DOT_SKIP_RATE = 10
 sam_analyze.DOT_SIZE = 0.1
-sam_analyze.MIN_EVENT_SIZE = 1e3
-sam_analyze.ROTATION_JOIN_SIZE = 1e5
-sam_analyze.LINES_JOIN_SIZE = 1e3
-sam_analyze.LINE_MIN_SIZE = 1e1
+sam_analyze.MIN_EVENT_SIZE = int(1e3)
+sam_analyze.ROTATION_JOIN_SIZE = int(1e5)
+sam_analyze.LINES_JOIN_SIZE = int(1e3)
+sam_analyze.LINE_MIN_SIZE = int(1e1)
 
 for foldername in os.listdir("tests"):
     if not os.path.isdir(mkpath("tests", foldername)) or foldername.strip("/").strip("\\") == "small":
+        continue
+
+    if foldername.strip("/").strip("\\") in ("large6", "large7"):
         continue
 
     sam_analyze.main(

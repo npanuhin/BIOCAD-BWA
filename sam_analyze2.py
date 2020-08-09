@@ -3,9 +3,14 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 # from matplotlib.patches import ConnectionStyle
+from json import loads as json_loads
+import sys
 import os
 
 INT_MAX = int(1e9) + 7
+
+# TODO:
+# - Fix duplication: insertion must be way smaller
 
 
 # !!! X - query, Y - ref !!!
@@ -21,14 +26,14 @@ INT_MAX = int(1e9) + 7
 # LINE_MIN_SIZE = 1e1
 
 # Large
-GRID_SIZE = 1e5
-MIN_RID_SIZE = 1e3
+GRID_SIZE = int(1e5)
+MIN_RID_SIZE = int(1e3)
 DOT_SKIP_RATE = 10
 DOT_SIZE = 0.1
-MIN_EVENT_SIZE = 1e3
-ROTATION_JOIN_SIZE = 1e5
-LINES_JOIN_SIZE = 1e3
-LINE_MIN_SIZE = 1e1
+MIN_EVENT_SIZE = int(1e3)
+ROTATION_JOIN_SIZE = int(1e5)
+LINES_JOIN_SIZE = int(1e3)
+LINE_MIN_SIZE = int(1e1)
 
 
 FIGSIZE = (10, 7)
@@ -88,6 +93,24 @@ def dotOnLineY(x1, y1, x2, y2, target_x):
     return y1 + (y2 - y1) * ((target_x - x1) / (x2 - x1))
 
 
+def setSettings(settings_path):
+    global GRID_SIZE, MIN_RID_SIZE, DOT_SKIP_RATE, DOT_SIZE, MIN_EVENT_SIZE, ROTATION_JOIN_SIZE, \
+        LINES_JOIN_SIZE, LINE_MIN_SIZE, FIGSIZE, FONT_SIZE, CIGAR_FLAGS
+
+    with open(settings_path, 'r', encoding="utf-8") as settings_file:
+        settings = json_loads(settings_file.read().strip())
+
+    for key in settings:
+        if isinstance(getattr(sys.modules[__name__], key), int):
+            setattr(sys.modules[__name__], key, int(settings[key]))
+
+        elif isinstance(getattr(sys.modules[__name__], key), float):
+            setattr(sys.modules[__name__], key, float(settings[key]))
+
+        else:
+            setattr(sys.modules[__name__], key, settings[key])
+
+
 class Plot:
     def __init__(self, title=None, nameX=None, nameY=None, figsize=FIGSIZE):
         self.fig = plt.figure(title, figsize)
@@ -140,6 +163,9 @@ class Plot:
 
 
 def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder):
+
+    if os.path.exists(mkpath(output_folder, "settings.json")):
+        setSettings(mkpath(output_folder, "settings.json"))
 
     with open(query_genome_path, 'r', encoding="utf-8") as file:
         for name, sequence in SimpleFastaParser(file):
@@ -273,6 +299,7 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
     # return
 # ========================================================================================================================================
     # Join rotations for bwa_actions + create rotations for large_actions
+    # TODO: not count I and D actions in ref/query end
 
     rotations = []
 
@@ -283,8 +310,8 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
 
     def getActionRefEnd(action):
         if action[3] in ('M', 'D'):
-            return action[0] + action[2]
-        return action[0]
+            return action[1] + action[2]
+        return action[1]
 
     bwa_actions.sort(key=lambda action: action[0])
 

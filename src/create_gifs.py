@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 import os
 
 
-def clreateGif(path_in, path_out, delay=20, resize=0.3):
+def createGif(path_in, path_out, delay=20, resize=0.3):
     s = Popen(
         "convert -delay {} -loop 0 {} -resize {}% {}".format(delay, path_in, resize * 100, path_out),
         shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
@@ -19,7 +19,7 @@ def main():
 
     print("Now in {}".format(os.getcwd()))
 
-    clreateGif("*.png", "../history.gif")
+    createGif("*.png", "../history.gif")
 
     print("-" * 30 + "\n")
 
