@@ -10,6 +10,7 @@ INT_MAX = int(1e9) + 7
 
 # TODO:
 # - Fix duplication: insertion must be way smaller
+# - Not count I and D actions in ref/query end in main funtion (rotation)
 
 
 # !!! X - query, Y - ref !!!
@@ -118,6 +119,19 @@ def setSettings(settings, alternative_settings_path=None):
                 break
         else:
             break
+
+
+def linearApprox(dots):
+    n, sumx, sumy, sumx2, sumxy = len(dots), 0, 0, 0, 0
+    for x, y in dots:
+        sumx += x
+        sumy += y
+        sumx2 += x ** 2
+        sumxy += x * y
+
+    k = (n * sumxy - (sumx * sumy)) / (n * sumx2 - sumx * sumx)
+    b = (sumy - k * sumx) / n
+    return k, b
 
 
 class Plot:
@@ -307,7 +321,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     # return
 # ========================================================================================================================================
     # Join rotations for bwa_actions + create rotations for large_actions
-    # TODO: not count I and D actions in ref/query end
 
     rotations = []
 
@@ -421,27 +434,33 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     # return
 # ========================================================================================================================================
     # Count lines
-
     print("Counting lines...")
-
-    lines = []
 
     lines_join_size2 = settings["lines_join_size"] ** 2
     line_min_size2 = settings["line_min_size"] ** 2
 
-    for dot_x in range(0, len(graph), settings["dot_skip_rate"]):
-        for dot_y in graph[dot_x]:
-            for i in range(len(lines)):
+    lines = []  # Struct: { [start_x, start_y, end_x, end_y, [dots]] }
 
-                if distance2(dot_x, dot_y, lines[i][2], lines[i][3]) <= lines_join_size2:
-                    lines[i][0] = min(lines[i][0], dot_x)
-                    lines[i][1] = min(lines[i][1], dot_y)
-                    lines[i][2] = max(lines[i][2], dot_x)
-                    lines[i][3] = max(lines[i][3], dot_y)
-                    lines[i][4].append([dot_x, dot_y])
+    for x in range(0, len(graph), settings["dot_skip_rate"]):
+        for y in graph[x]:
+            for line in lines:
+
+                if distance2(x, y, *line[4][-1]) <= lines_join_size2 and \
+                        (len(line[4]) == 1 or distance2(x, y, *line[4][-2]) <= lines_join_size2):
+                    line[4].append([x, y])
                     break
             else:
-                lines.append([dot_x, dot_y, dot_x, dot_y, [[dot_x, dot_y]]])
+                lines.append([None, None, None, None, [[x, y]]])
+
+    for line in lines:
+        line[4].sort(key=lambda dot: dot[0])
+        k, b = linearApprox(line[4])
+
+        line[0] = line[4][0][0]
+        line[1] = k * line[0] + b
+
+        line[2] = line[4][-1][0]
+        line[3] = k * line[2] + b
 
     lines = [line for line in lines if distance2(line[0], line[1], line[2], line[3]) >= line_min_size2]
 
@@ -539,7 +558,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     plot.fig.tight_layout()
     print("Saving dot plot...\n")
     plot.save(mkpath(output_folder, "sam_analyze (dot plot).png"))
-
     del plot
 
     # return
@@ -637,14 +655,13 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                 if large_actions[i][1] >= start_query_pos:
                     large_actions[i][2] -= bottom
 
-            # Plotting:
             for line in lines:
                 action_plot.scatter(line[4], dotsize=settings["dotsize"], color="blue")
 
         action_plot.fig.tight_layout()
         print("Saving large action #{}...\n".format(action_index))
         action_plot.save(mkpath(output_folder, "history", str(action_index).zfill(3) + ".png"))
-        action_plot.close()
+        del action_plot
 
 
 if __name__ == "__main__":
