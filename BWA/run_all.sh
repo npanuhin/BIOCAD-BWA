@@ -3,7 +3,7 @@ cd "small/";
 for d in */ ; do
     cd "$d";
     ./run.sh;
-    cd ".."
+    cd "..";
 done
 
 cd "..";
@@ -13,6 +13,6 @@ for d in */ ; do
 	then
     	cd "$d";
     	./run.sh;
-    	cd ".."
+    	cd "..";
     fi
 done
