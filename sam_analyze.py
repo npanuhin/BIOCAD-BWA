@@ -24,8 +24,9 @@ GRID_SIZE = 1e5
 MIN_RID_SIZE = 1e3
 DOT_SKIP_RATE = 10
 DOT_SIZE = 0.1
-MIN_EVENT_SIZE = 500
+MIN_EVENT_SIZE = 1e3
 
+ROTATION_JOIN_SIZE = 1e4
 EPSILON = 1e4
 
 FONT_SIZE = 10
@@ -50,7 +51,7 @@ query_genome_path = "samples/large4/large_genome1.fasta"
 ref_genome_path = "samples/large4/large_genome2.fasta"
 sam_file_path = "BWA/large4/bwa_output.sam"
 
-output_to_file = True
+show_plot = True
 
 output_folder = "tests/large4"
 
@@ -95,7 +96,7 @@ def setPlot(nameX, nameY):
     # plot.hlines(-4, -5, 5)  # Горизонтальные динии
 
 
-def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, output_folder):
+def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder):
 
     for record in SeqIO.parse(query_genome_path, "fasta"):
         query_genome_length = len(record.seq)
@@ -245,15 +246,15 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
 
             if ref_length > query_length:
 
-                if ref_length >= MIN_EVENT_SIZE:
-                    large_actions.append(['D', last_query_end, last_ref_end, ref_length])
+                # if ref_length >= MIN_EVENT_SIZE:
+                #     large_actions.append(['D', last_query_end, last_ref_end, cur_ref_pos - last_ref_end])
 
                 plt.plot([last_query_end, cur_query_pos], [last_ref_end, cur_ref_pos], color="red")
 
             else:
 
-                if query_length >= MIN_EVENT_SIZE:
-                    large_actions.append(['I', last_query_end, last_ref_end, ref_length])
+                # if query_length >= MIN_EVENT_SIZE:
+                #     large_actions.append(['I', last_query_end, last_ref_end, cur_query_pos - last_query_end])
 
                 plt.plot([last_query_end, cur_query_pos], [last_ref_end, cur_ref_pos], color="green")
 
@@ -270,6 +271,12 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
                 #                  color="green",
                 #                  textcoords='offset points'
                 #                  )
+
+            if ref_length >= MIN_EVENT_SIZE:
+                large_actions.append(['D', last_query_end, last_ref_end, cur_ref_pos - last_ref_end])
+
+            if query_length >= MIN_EVENT_SIZE:
+                large_actions.append(['I', last_query_end, last_ref_end, cur_query_pos - last_query_end])
 
         if action_type == 'M':
             for i in range(length):
@@ -331,10 +338,10 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
         plt.scatter(*zip(*ghost_dots), s=DOT_SIZE, color="#ccc")
     plt.tight_layout()
 
-    if output_to_file:
-        print("Saving plot...")
-        plt.savefig(mkpath(output_folder, "sam_analyze.png"), dpi=300)
-    else:
+    print("Saving plot...")
+    plt.savefig(mkpath(output_folder, "sam_analyze.png"), dpi=300)
+
+    if show_plot:
         print("Showing plot...")
         plt.show()
 
@@ -342,9 +349,44 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
     plt.clf()
     plt.close()
 
+    # return
+
 # ------------------------------------------------------------------------------------------------
 
-    large_actions.sort(key=lambda action: action[3])
+    rotations = sorted([action for action in large_actions if action[0] == 'R'], key=lambda action: action[1])
+
+    for i in range(len(rotations) - 1, 0, -1):
+        rotation_query_pos, rotation_ref_pos, rotation_length = rotations[i][1:4]
+        rotation_start, rotation_end = rotation_query_pos, rotation_query_pos + rotation_length
+
+        print(rotations[i], rotation_start, rotation_end)
+
+        if rotations[i - 1][1] + rotations[i - 1][3] + ROTATION_JOIN_SIZE >= rotations[i][1]:
+            rotations[i - 1][3] = (rotations[i][1] + rotations[i][3]) - rotations[i - 1][1]
+            del rotations[i]
+
+    print()
+    rotations.sort(key=lambda action: action[1])
+
+    for i in range(len(rotations) - 1, 0, -1):
+        rotation_query_pos, rotation_ref_pos, rotation_length = rotations[i][1:4]
+        rotation_start, rotation_end = rotation_query_pos, rotation_query_pos + rotation_length
+
+        print(rotations[i], rotation_start, rotation_end)
+
+    print()
+
+    new_large_actions = rotations
+    for action in large_actions:
+        if action[0] != 'R':
+            new_large_actions.append(action)
+    large_actions = new_large_actions
+
+    large_actions.sort(key=lambda action: -abs(action[3]))
+
+    # --------------------------------
+
+    # return
 
     if not os.path.exists(mkpath(output_folder, "history")):
         os.mkdir(mkpath(output_folder, "history"))
@@ -352,31 +394,60 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
     for filename in os.listdir(mkpath(output_folder, "history")):
         os.remove(mkpath(output_folder, "history", filename))
 
-    return  # TODO
+    plt.figure("large_action0", figsize=(16, 11.2))
+    setPlot(query_genome_name, ref_genome_name)
+    plt.scatter(*zip(*dots), s=DOT_SIZE)
+    plt.tight_layout()
+    print("Saving large action # 0...")
+    plt.savefig(mkpath(output_folder, "history", "0.png"), dpi=300)
+    plt.cla()
+    plt.clf()
+    plt.close()
 
-    action_index = 1
     for action_index in range(len(large_actions)):
         action = large_actions[action_index]
-        action_type, start_ref_pos, start_query_pos, length = action[0], action[1], action[2], action[3]
+        print(action)
+        # continue
+        action_type, start_query_pos, start_ref_pos, length = action[0], action[1], action[2], action[3]
 
-        plt.figure("large_action{}".format(large_actions), figsize=(16, 11.2))
+        # length - направленная длина!!!
+
+        plt.figure("large_action{}".format(action_index + 1), figsize=(16, 11.2))
         setPlot(query_genome_name, ref_genome_name)
 
         new_dots = []
 
         if action_type == 'R':
             for dot_x, dot_y in dots:
-                if start_ref_pos <= dot_x <= start_ref_pos + length:
-                    dot_y
+                if start_query_pos <= dot_x <= start_query_pos + length:
+                    dot_y = ref_genome_length - dot_y
+                new_dots.append([dot_x, dot_y])
+
+        elif action_type == 'I':
+            for dot_x, dot_y in dots:
+                if dot_x >= start_query_pos + abs(length):
+                    dot_x -= length
+                new_dots.append([dot_x, dot_y])
+
+            for i in range(action_index + 1, len(large_actions)):
+                if large_actions[i][1] >= start_query_pos + abs(length):
+                    large_actions[i][1] -= abs(length)
+
+        elif action_type == 'D':
+            for dot_x, dot_y in dots:
+                if dot_x >= start_query_pos:
+                    dot_y -= length
+                new_dots.append([dot_x, dot_y])
+
+        else:
+            raise "Unknown action type"
 
         dots = new_dots
 
-        # TODO
-
-        # plt.scatter(*zip(*dots), s=DOT_SIZE)
+        plt.scatter(*zip(*dots), s=DOT_SIZE)
         plt.tight_layout()
-        print("Saving large action # {}...".format(action_index))
-        plt.savefig(mkpath(output_folder, "history", str(action_index) + ".png"), dpi=300)
+        print("Saving large action # {}...".format(action_index + 1))
+        plt.savefig(mkpath(output_folder, "history", str(action_index + 1) + ".png"), dpi=300)
 
         plt.cla()
         plt.clf()
@@ -384,4 +455,4 @@ def main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, outp
 
 
 if __name__ == "__main__":
-    main(query_genome_path, ref_genome_path, sam_file_path, output_to_file, output_folder)
+    main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder)
