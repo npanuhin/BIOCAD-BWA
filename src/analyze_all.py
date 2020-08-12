@@ -2,25 +2,29 @@ import os
 from sys import path as sys_path
 sys_path.append("../")
 
-import sam_analyze2 as sam_analyze
+import sam_analyze
 
 
 def mkpath(*paths):
     return os.path.normpath(os.path.join(*paths))
 
 
-# Small:
-
-sam_analyze.GRID_SIZE = 100
-sam_analyze.MIN_RID_SIZE = 1
-sam_analyze.DOT_SKIP_RATE = 1
-sam_analyze.DOT_SIZE = 0.1
-sam_analyze.MIN_EVENT_SIZE = 3
-sam_analyze.ROTATION_JOIN_SIZE = 10
-sam_analyze.LINES_JOIN_SIZE = 10
-sam_analyze.LINE_MIN_SIZE = 10
-
 os.chdir("../")
+
+# Small
+SETTINGS = {
+    "grid_size": 100,
+    "min_rid_size": 1,
+    "dot_skip_rate": 1,
+    "dotsize": 0.1,
+    "fontsize": 10,
+    "figsize": (10, 7),
+
+    "min_event_size": 3,
+    "rotations_join_size": 10,
+    "lines_join_size": 5,
+    "line_min_size": 10
+}
 
 for foldername in os.listdir(mkpath("tests", "small")):
 
@@ -29,26 +33,31 @@ for foldername in os.listdir(mkpath("tests", "small")):
         ref_genome_path="samples/small/{}.fasta".format(foldername),
         sam_file_path="BWA/small/{}/bwa_output.sam".format(foldername),
         show_plot=False,
-        output_folder="tests/small/{}".format(foldername)
+        output_folder="tests/small/{}".format(foldername),
+        settings=SETTINGS
     )
 
+# Large
+SETTINGS = {
+    "grid_size": int(1e5),
+    "min_rid_size": int(1e3),
+    "dot_skip_rate": 10,
+    "dotsize": 0.1,
+    "fontsize": 10,
+    "figsize": (10, 7),
 
-# Large:
+    "min_event_size": int(1e3),
+    "rotations_join_size": int(1e5),
+    "lines_join_size": "$min_event_size * 2",
+    "line_min_size": "$min_event_size"
+}
 
-sam_analyze.GRID_SIZE = int(1e5)
-sam_analyze.MIN_RID_SIZE = int(1e3)
-sam_analyze.DOT_SKIP_RATE = 10
-sam_analyze.DOT_SIZE = 0.1
-sam_analyze.MIN_EVENT_SIZE = int(1e3)
-sam_analyze.ROTATION_JOIN_SIZE = int(1e5)
-sam_analyze.LINES_JOIN_SIZE = int(1e3)
-sam_analyze.LINE_MIN_SIZE = int(1e1)
 
 for foldername in os.listdir("tests"):
     if not os.path.isdir(mkpath("tests", foldername)) or foldername.strip("/").strip("\\") == "small":
         continue
 
-    if foldername.strip("/").strip("\\") in ("large6", "large7"):
+    if foldername.strip("/").strip("\\") == "large7":
         continue
 
     sam_analyze.main(
@@ -56,5 +65,6 @@ for foldername in os.listdir("tests"):
         ref_genome_path="samples/{}/large_genome2.fasta".format(foldername),
         sam_file_path="BWA/{}/bwa_output.sam".format(foldername),
         show_plot=False,
-        output_folder="tests/{}".format(foldername)
+        output_folder="tests/{}".format(foldername),
+        settings=SETTINGS
     )

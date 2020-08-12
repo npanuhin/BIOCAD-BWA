@@ -1,37 +1,50 @@
 from string import ascii_uppercase
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Polygon
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 # from matplotlib.patches import ConnectionStyle
-# import matplotlib.lines as mlines
+from json import load as json_load
 import os
-# from collections import deque
-# from threading import Thread
-# from random import randint
-# import re
 
 INT_MAX = int(1e9) + 7
+
+# TODO:
+# - Not count I and D actions in ref/query end in main funtion (rotation)
+# - Left bottom
 
 
 # !!! X - query, Y - ref !!!
 
 # Small
-# GRID_SIZE = 1e2
-# MIN_RID_SIZE = 1
-# DOT_SKIP_RATE = 1
-# DOT_SIZE = 0.1
-# MIN_EVENT_SIZE = 1
-# ROTATION_JOIN_SIZE = 1e1
+# SETTINGS = {
+#     "grid_size": 100,
+#     "min_rid_size": 1,
+#     "dot_skip_rate": 1,
+#     "dotsize": 0.1,
+#     "fontsize": 10,
+#     "figsize": (10, 7),
+
+#     "min_event_size": 3,
+#     "rotations_join_size": 10,
+#     "lines_join_size": 5,
+#     "line_min_size": 10
+# }
 
 # Large
-GRID_SIZE = 1e5
-MIN_RID_SIZE = 1e3
-DOT_SKIP_RATE = 10
-DOT_SIZE = 0.1
-MIN_EVENT_SIZE = 1e3
-ROTATION_JOIN_SIZE = 1e5
+SETTINGS = {
+    "grid_size": int(1e5),
+    "min_rid_size": int(1e3),
+    "dot_skip_rate": 10,
+    "dotsize": 0.1,
+    "fontsize": 10,
+    "figsize": (10, 7),
 
-FIGSIZE = (10, 7)
-FONT_SIZE = 10
+    "min_event_size": int(1e3),
+    "rotations_join_size": int(1e5),
+    "lines_join_size": "$min_event_size * 2",
+    "line_min_size": "$min_event_size"
+}
 
 CIGAR_FLAGS = [
     "template having multiple templates in sequencing (read is paired)",
@@ -49,13 +62,13 @@ CIGAR_FLAGS = [
 ]
 
 
-# ---SETTINGS--- #
+# ---TESTING SETTINGS--- #
 
-query_genome_path = "samples/large1/large_genome1.fasta"
-ref_genome_path = "samples/large1/large_genome2.fasta"
-sam_file_path = "BWA/large1/bwa_output.sam"
+query_genome_path = "samples/large6/large_genome1.fasta"
+ref_genome_path = "samples/large6/large_genome2.fasta"
+sam_file_path = "BWA/large6/bwa_output.sam"
 show_plot = True
-output_folder = "tests/large1"
+output_folder = "tests/large6"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/duplication.fasta"
@@ -63,7 +76,7 @@ output_folder = "tests/large1"
 # show_plot = True
 # output_folder = "tests/small/duplication"
 
-# ---SETTINGS--- #
+# ---TESTING SETTINGS--- #
 
 
 def mkpath(*paths):
@@ -74,28 +87,69 @@ def prettifyNumber(num):
     return "{:,}".format(num)
 
 
-def equalE(value1, value2, E):
-    '''Epsilon comparison'''
-    return value1 - E < value2 < value1 + E
+# def equalE(value1, value2, E):
+#     '''Epsilon comparison'''
+#     return value1 - E < value2 < value1 + E
+
+
+def distance2(x1, y1, x2, y2):
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
+
+def dotOnLineY(x1, y1, x2, y2, target_x):
+    return y1 + (y2 - y1) * ((target_x - x1) / (x2 - x1))
+
+
+def setSettings(settings, alternative_settings_path=None):
+    if alternative_settings_path is not None and os.path.exists(alternative_settings_path):
+        with open(alternative_settings_path, 'r', encoding="utf-8") as settings_file:
+            settings.update(json_load(settings_file))
+
+    counted = {key: settings[key] for key in settings if not isinstance(settings[key], str) or settings[key][0] != '$'}
+
+    while True:
+        for key in settings:
+            if key not in counted:
+                try:
+                    settings[key] = eval(settings[key][1:], None, counted)
+                except NameError:
+                    continue
+                counted[key] = settings[key]
+                break
+        else:
+            break
+
+
+def linearApprox(dots):
+    n, sumx, sumy, sumx2, sumxy = len(dots), 0, 0, 0, 0
+    for x, y in dots:
+        sumx += x
+        sumy += y
+        sumx2 += x ** 2
+        sumxy += x * y
+
+    k = (n * sumxy - (sumx * sumy)) / (n * sumx2 - sumx * sumx)
+    b = (sumy - k * sumx) / n
+    return k, b
 
 
 class Plot:
-    def __init__(self, title=None, nameX=None, nameY=None, figsize=FIGSIZE):
+    def __init__(self, title=None, nameX=None, nameY=None, grid_size=None, fontsize=None, figsize=None):
         self.fig = plt.figure(title, figsize)
         self.ax = self.fig.add_subplot()
 
-        # self.fig.rc("font", size=FONT_SIZE)               # controls default text sizes
-        # self.fig.rc("axes", titlesize=FONT_SIZE)          # fontsize of the axes title
+        # self.fig.rc("font", size=fontsize)               # controls default text sizes
+        # self.fig.rc("axes", titlesize=fontsize)          # fontsize of the axes title
         # self.ax.rc("axes", labelsize=8)                  # fontsize of the x and y labels
-        # self.ax.rc("xtick", labelsize=FONT_SIZE)         # fontsize of the tick labels
-        # self.ax.rc("ytick", labelsize=FONT_SIZE)         # fontsize of the tick labels
-        # self.ax.rc("legend", fontsize=FONT_SIZE)         # legend fontsize
-        # self.ax.rc("figure", titlesize=FONT_SIZE)        # fontsize of the figure title
+        # self.ax.rc("xtick", labelsize=fontsize)         # fontsize of the tick labels
+        # self.ax.rc("ytick", labelsize=fontsize)         # fontsize of the tick labels
+        # self.ax.rc("legend", fontsize=fontsize)         # legend fontsize
+        # self.ax.rc("figure", titlesize=fontsize)        # fontsize of the figure title
         self.ax.ticklabel_format(style="plain")
-        self.ax.set_xticks(list(range(0, int(GRID_SIZE * 1000), int(GRID_SIZE))))
-        self.ax.set_yticks(list(range(0, int(GRID_SIZE * 1000), int(GRID_SIZE))))
-        self.ax.tick_params(axis="x", which="major", labelsize=FONT_SIZE, rotation=30)
-        self.ax.tick_params(axis="y", which="major", labelsize=FONT_SIZE)
+        self.ax.set_xticks(list(range(0, int(grid_size * 1000), int(grid_size))))
+        self.ax.set_yticks(list(range(0, int(grid_size * 1000), int(grid_size))))
+        self.ax.tick_params(axis="x", which="major", labelsize=fontsize, rotation=30)
+        self.ax.tick_params(axis="y", which="major", labelsize=fontsize)
         self.ax.grid(which="major", linestyle='-', linewidth="1", alpha=0.1, color="black")
 
         # self.ax.minorticks_on()
@@ -109,48 +163,55 @@ class Plot:
     def __del__(self):
         self.close()
 
-    def scatter(self, dots, s=DOT_SIZE, *args, **kwargs):
-        self.ax.scatter(*zip(*dots), s=DOT_SIZE, *args, **kwargs)
+    def scatter(self, dots, dotsize=None, *args, **kwargs):
+        self.ax.scatter(*zip(*dots), s=dotsize, *args, **kwargs)
 
     def line(self, x1, y1, x2, y2, *args, **kwargs):
         self.ax.plot([x1, x2], [y1, y2], *args, **kwargs)
 
-    def save(self, path):
-        self.fig.savefig(path, dpi=100)
+    def legendLine(self, legend_dict, fontsize=None, *line_args, **line_kwargs):
+        legend_objects, legend_names = [], []
+        for name in legend_dict:
+            legend_names.append(name)
+            legend_objects.append(Line2D([0], [0], color=legend_dict[name], *line_args, **line_kwargs))
+
+        self.ax.legend(legend_objects, legend_names, fontsize=fontsize)
+
+    def poligon(self, dots, *args, **kwargs):
+        self.ax.add_patch(Polygon(dots, *args, **kwargs))
+
+    def save(self, path, *args, **kwargs):
+        self.fig.savefig(path, dpi=400, *args, **kwargs)
 
     def close(self):
         plt.close(self.fig)
 
 
-def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder):
+def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_plot: bool, output_folder: str, settings: dict):
+
+    setSettings(settings, mkpath(output_folder, "settings.json"))
 
     with open(query_genome_path, 'r', encoding="utf-8") as file:
-        for _, sequence in SimpleFastaParser(file):
+        for name, sequence in SimpleFastaParser(file):
+            query_genome_name = name
             query_genome_length = len(sequence)
             break
 
     with open(ref_genome_path, 'r', encoding="utf-8") as file:
-        for _, sequence in SimpleFastaParser(file):
+        for name, sequence in SimpleFastaParser(file):
+            ref_genome_name = name
             ref_genome_length = len(sequence)
             break
 
-    print("query_genome_length: ", query_genome_length)
-    print("ref_genome_length: ", ref_genome_length)
+    print("Query: {} [{}]".format(query_genome_name, query_genome_length))
+    print("Reference: {} [{}]".format(ref_genome_name, ref_genome_length))
     print()
 
-    # sam_info = []
     sam_data = []
-    query_genome_name, ref_genome_name = None, None
 
     with open(sam_file_path, 'r', encoding="utf-8") as sam_file:
 
-        for line in sam_file:
-            if line.startswith('@'):
-                # sam_info.append(line)
-                continue
-
-            line = line.split()
-
+        for line in (line.strip().split() for line in sam_file if not line.strip().startswith("@")):
             # Quality
             # mapQ = int(line[4])
             # quality = round((10 ** (mapQ / -10)) * 100, 6)
@@ -168,52 +229,33 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             flags.sort()
 
             # Rid
-            rid = line[9]
-            rid_size = len(rid)
-            if rid_size <= MIN_RID_SIZE:
+            rid_size = len(line[9])
+            if rid_size <= settings["min_rid_size"]:
                 continue
 
             # CIGAR
             cigar = line[5]
             actions = []
             buff = ""
-            for i in range(len(cigar)):
-                if cigar[i] in ascii_uppercase:
-                    actions.append([int(buff), cigar[i]])
-                    # print("{}-{}|".format(buff, actions[i]), end="")
+            for char in cigar:
+                if char in ascii_uppercase:
+                    actions.append([int(buff), char])
                     buff = ""
                 else:
-                    buff += cigar[i]
-
-            # Names
-            if ref_genome_name is None:
-                ref_genome_name = line[0]
-            if query_genome_name is None:
-                query_genome_name = line[2]
+                    buff += char
 
             sam_data.append([position, flags, rid_size, actions])
-
-    # sam_data.sort(key=lambda item: item[2])
 
     # return
 # ========================================================================================================================================
 
-    all_actions = []
+    bwa_actions = []
 
     for position, flags, rid_size, actions in sam_data:
-        print("{} -> {}".format(prettifyNumber(position), prettifyNumber(position + rid_size)))
-        for flag in flags:
-            # if flag == 11:  # Currently flag №11 is disabled for showing
-            #     continue
-            print(CIGAR_FLAGS[flag])
 
-        # for length, action_type in actions:
-        #     print("{}-{}|".format(length, action_type), end="")
-        # print()
-
+        start_query_pos, start_ref_pos, end_query_pos, end_ref_pos = INT_MAX, INT_MAX, 0, 0
         cur_query_pos = position
         cur_ref_pos = 0
-        start_query_pos, start_ref_pos, end_query_pos, end_ref_pos = INT_MAX, INT_MAX, 0, 0
 
         for length, action_type in actions:
 
@@ -242,14 +284,25 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
             else:
                 raise "Unknown action type"
 
-        rotation_center = None
-        if 4 in flags:
-            rotation_center = (start_ref_pos + end_ref_pos) / 2
+        print("{} -> {}".format(prettifyNumber(start_query_pos), prettifyNumber(end_query_pos)))
+        # for flag in flags:
+        #     if flag == 11:  # Disable flag №11
+        #         continue
+        #     print(CIGAR_FLAGS[flag])
+
+        # for length, action_type in actions:
+        #     print("{}-{}|".format(length, action_type), end="")
+        # print()
+
+        rotation_center = ((start_ref_pos + end_ref_pos) / 2) if 4 in flags else None
 
         cur_query_pos = position
         cur_ref_pos = 0
 
         for length, action_type in actions:
+
+            if action_type not in ('S', 'H'):
+                bwa_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
 
             if action_type == 'S':
                 cur_ref_pos += length
@@ -258,50 +311,37 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
                 cur_ref_pos += length
 
             elif action_type == 'M':
-                all_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_query_pos += length
                 cur_ref_pos += length
 
             elif action_type == 'I':
-                all_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_ref_pos += length
 
             elif action_type == 'D':
-                all_actions.append([cur_query_pos, cur_ref_pos, length, action_type, rotation_center])
                 cur_query_pos += length
-
-        print()
 
     # return
 # ========================================================================================================================================
-    # Join rotations for all_actions + create rotations for large_actions
+    # Join rotations for bwa_actions + create rotations for large_actions
 
     rotations = []
 
-    def getActionRefEnd(action):
-        start_query_pos, start_ref_pos, length, action_type, rotation_center = action
-        if action_type == 'M':
-            return start_ref_pos + length
-        elif action_type == 'I':
-            return start_ref_pos
-        elif action_type == 'D':
-            return start_ref_pos + length
-
     def getActionQueryEnd(action):
-        start_query_pos, start_ref_pos, length, action_type, rotation_center = action
-        if action_type == 'M':
-            return start_query_pos + length
-        elif action_type == 'I':
-            return start_query_pos + length
-        elif action_type == 'D':
-            return start_query_pos
+        if action[3] in ('M', 'I'):
+            return action[0] + action[2]
+        return action[0]
 
-    all_actions.sort(key=lambda action: action[0])
+    def getActionRefEnd(action):
+        if action[3] in ('M', 'D'):
+            return action[1] + action[2]
+        return action[1]
+
+    bwa_actions.sort(key=lambda action: action[0])
 
     rotation_block_start, rotation_block_end = 0, 0
     last_rotation_query_end = None
-    for i in range(len(all_actions)):
-        action = all_actions[i]
+    for i in range(len(bwa_actions)):
+        action = bwa_actions[i]
         start_query_pos, start_ref_pos, length, action_type, rotation_center = action
         if rotation_center is None:
             continue
@@ -309,17 +349,17 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
         if last_rotation_query_end is None:
             rotation_block_start = i
 
-        elif last_rotation_query_end + ROTATION_JOIN_SIZE >= start_query_pos:
+        elif last_rotation_query_end + settings["rotations_join_size"] >= start_query_pos:
             pass
 
         else:
-            new_rotation_center = (all_actions[rotation_block_start][1] + getActionRefEnd(all_actions[rotation_block_end])) / 2
+            new_rotation_center = (bwa_actions[rotation_block_start][1] + getActionRefEnd(bwa_actions[rotation_block_end])) / 2
             for j in range(rotation_block_start, rotation_block_end + 1):
-                all_actions[j][4] = new_rotation_center
+                bwa_actions[j][4] = new_rotation_center
 
-            block_length = getActionQueryEnd(all_actions[rotation_block_end]) - all_actions[rotation_block_start][0]
-            if block_length >= MIN_EVENT_SIZE:
-                rotations.append(['R', all_actions[rotation_block_start][0], all_actions[rotation_block_start][1], block_length, ref_genome_length - new_rotation_center])
+            block_length = getActionQueryEnd(bwa_actions[rotation_block_end]) - bwa_actions[rotation_block_start][0]
+            if block_length >= settings["min_event_size"]:
+                rotations.append(["Rotation", bwa_actions[rotation_block_start][0], bwa_actions[rotation_block_start][1], block_length, ref_genome_length - new_rotation_center])
 
             rotation_block_start = i
 
@@ -327,70 +367,36 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
         last_rotation_query_end = getActionQueryEnd(action)
 
     if last_rotation_query_end is not None:
-        new_rotation_center = (all_actions[rotation_block_start][1] + getActionRefEnd(all_actions[rotation_block_end])) / 2
+        new_rotation_center = (bwa_actions[rotation_block_start][1] + getActionRefEnd(bwa_actions[rotation_block_end])) / 2
         for j in range(rotation_block_start, rotation_block_end + 1):
-            all_actions[j][4] = new_rotation_center
+            bwa_actions[j][4] = new_rotation_center
 
-        block_length = getActionQueryEnd(all_actions[rotation_block_end]) - all_actions[rotation_block_start][0]
-        if block_length >= MIN_EVENT_SIZE:
-            rotations.append(['R', all_actions[rotation_block_start][0], all_actions[rotation_block_start][1], block_length, ref_genome_length - new_rotation_center])
-
-    # return
-    # ========================================================================================================================================
-
-    all_actions.sort(key=lambda action: action[0])
-
-    # if len(all_actions) > 1:
-
-    #     all_actions_circle = deque(all_actions)
-
-    #     while True:
-    #         first_action = all_actions_circle[0]
-    #         first_action_type, first_action_ref_pos, first_action_length = first_action[3], first_action[1], first_action[2]
-    #         last_action = all_actions_circle[-1]
-    #         last_action_type, last_action_ref_pos, last_action_length = last_action[3], last_action[1], last_action[2]
-
-    #         first_ref_pos = first_action_ref_pos
-    #         last_ref_pos = last_action_ref_pos
-
-    #         if last_action_type == 'M':
-    #             last_ref_pos += last_action_length
-    #         elif last_action_type == 'I':
-    #             last_ref_pos += last_action_length
-    #         elif last_action_type == 'D':
-    #             pass
-
-    #         first_action_X_length = 0 if first_action_type == 'I' else first_action_length
-    #         last_action_X_length = 0 if last_action_type == 'I' else last_action_length
-
-    #         print(first_ref_pos, last_ref_pos)
-
-    #         if equalE(first_ref_pos, last_ref_pos, 1e4):
-    #             all_actions_circle.append(all_actions_circle.popleft())
-    #             for i in range(len(all_actions) - 1):
-    #                 all_actions_circle[i][0] -= first_action_X_length
-    #             all_actions_circle[-1][0] = all_actions_circle[-2][0] + last_action_X_length
-    #         else:
-    #             break
-
-    #     all_actions = list(all_actions_circle)
+        block_length = getActionQueryEnd(bwa_actions[rotation_block_end]) - bwa_actions[rotation_block_start][0]
+        if block_length >= settings["min_event_size"]:
+            rotations.append(["Rotation", bwa_actions[rotation_block_start][0], bwa_actions[rotation_block_start][1], block_length, ref_genome_length - new_rotation_center])
 
     # return
 # ========================================================================================================================================
+    # Create dots
 
-    plot = Plot("Main", query_genome_name, ref_genome_name)
-    last_query_end, last_ref_end, last_rotated_ref_end = None, None, None
-    dots, ghost_dots, rotated_dots, large_actions = [], [], [], []
+    bwa_actions.sort(key=lambda action: action[0])
 
-    # plot.ax.axvline(x=47445)
-    # plot.ax.axvline(x=53170)
-    # plot.ax.axvline(x=53171)
-    # plot.ax.axvline(x=53364)
-    # plot.ax.axvline(x=47445)
+    plot = Plot("Main", query_genome_name, ref_genome_length, settings["grid_size"], settings["fontsize"], settings["figsize"])
+    plot.legendLine({
+        "Insertion": "#0f0",
+        "Deletion": "#f00",
+        "Duplication": "#f0f",
+        "Back Duplication": "#0ff"
+    }, fontsize=settings["fontsize"], lw=2)
 
-    for action_index in range(len(all_actions)):
+    last_query_end, last_ref_end = None, None
+    dots, ghost_dots, rotated_dots = [], [], []
 
-        start_query_pos, start_ref_pos, length, action_type, rotation_center = all_actions[action_index]
+    graph = [[] for _ in range(query_genome_length + 1)]
+
+    for action_index in range(len(bwa_actions)):
+
+        start_query_pos, start_ref_pos, length, action_type, rotation_center = bwa_actions[action_index]
         cur_query_pos, cur_ref_pos = start_query_pos, start_ref_pos
 
         if rotation_center is None:
@@ -398,154 +404,173 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
         else:
             rotated = lambda cur_ref_pos: (ref_genome_length - cur_ref_pos) + ((ref_genome_length - rotation_center) - (ref_genome_length - cur_ref_pos)) * 2
 
-        if action_index > 0:
-            ref_gap = last_rotated_ref_end - rotated(cur_ref_pos)
-            # print(last_rotated_ref_end, rotated(cur_ref_pos), ref_gap)
-            query_gap = cur_query_pos - last_query_end
-
-            # The opposite gap !!!
-
-            if abs(query_gap) + abs(ref_gap) > 0:
-
-                color_pos = abs(ref_gap) / (abs(query_gap) + abs(ref_gap))
-
-                plot.line(last_query_end, last_rotated_ref_end, cur_query_pos, rotated(cur_ref_pos), color=(1 - color_pos, color_pos, 0))
-
-                # plot.ax.arrow(last_query_end, last_rotated_ref_end, (cur_query_pos - last_query_end), (rotated(cur_ref_pos) - last_rotated_ref_end),
-                #               length_includes_head=True, head_width=10, head_length=1000, color=(1 - color_pos, color_pos, 0))
-
-            # if query_gap > ref_gap and query_gap > 1:
-
-            #     # if ref_gap >= MIN_EVENT_SIZE:
-            #     #     large_actions.append(['D', last_query_end, last_ref_end, cur_ref_pos - last_ref_end])
-
-            #     plot.line(last_query_end, last_ref_end, cur_query_pos, cur_ref_pos, color="#f00")
-
-            # elif ref_gap > 1:
-
-            #     # if query_gap >= MIN_EVENT_SIZE:
-            #     #     large_actions.append(['I', last_query_end, last_ref_end, cur_query_pos - last_query_end])
-
-            #     plot.line(last_query_end, last_ref_end, cur_query_pos, cur_ref_pos, color="#0f0")
-
-            if abs(query_gap) >= MIN_EVENT_SIZE:
-
-                # Query:
-                if query_gap > 0:
-                    large_actions.append(['D', last_query_end, last_ref_end, query_gap])  # Insertion
-                elif query_gap < 0:
-                    large_actions.append(['L', last_query_end, last_ref_end, query_gap, abs(ref_gap)])  # Duplication  # abs?
-
-            if abs(ref_gap) >= MIN_EVENT_SIZE:
-
-                # if 40000 <= last_query_end <= 75000:
-                #     print("YES") # - (8)8888
-
-                # Ref:
-                # print(last_query_end, last_ref_end, last_rotated_ref_end, rotated(cur_ref_pos), ref_gap)
-                if ref_gap > 0:
-                    large_actions.append(['I', last_query_end, last_ref_end, ref_gap])
-                elif ref_gap < 0:
-                    large_actions.append(['I', last_query_end, last_ref_end, ref_gap])
-
         if action_type == 'M':
             for i in range(length):
                 if rotation_center is None:
                     dots.append([cur_query_pos, cur_ref_pos])
-                    rotated_dots.append([cur_query_pos, cur_ref_pos])
                 else:
                     dots.append([cur_query_pos, ref_genome_length - cur_ref_pos])
-                    rotated_dots.append([cur_query_pos, rotated(cur_ref_pos)])
                     ghost_dots.append([cur_query_pos, rotated(cur_ref_pos)])
+
+                rotated_dots.append([cur_query_pos, rotated(cur_ref_pos)])
+                graph[cur_query_pos].append(int(rotated(cur_ref_pos)))
 
                 cur_query_pos += 1
                 cur_ref_pos += 1
 
         elif action_type == 'I':
-
-            plot.line(cur_query_pos, rotated(cur_ref_pos), cur_query_pos, rotated(cur_ref_pos) + length, color="#0f0")
-
-            if length >= MIN_EVENT_SIZE:
-                large_actions.append([action_type, cur_query_pos, rotated(cur_ref_pos), length])
-
             cur_ref_pos += length
 
         elif action_type == 'D':
-            plot.line(cur_query_pos, rotated(cur_ref_pos), cur_query_pos + length, rotated(cur_ref_pos), color="#f00")
-
-            if length >= MIN_EVENT_SIZE:
-                large_actions.append([action_type, cur_query_pos, rotated(cur_ref_pos), length])
-
             cur_query_pos += length
 
         if last_query_end is None or cur_query_pos >= last_query_end:
-            last_ref_end = cur_ref_pos
             last_query_end = cur_query_pos
-            last_rotated_ref_end = rotated(cur_ref_pos)
 
-    dots = dots[::DOT_SKIP_RATE]
-    ghost_dots = ghost_dots[::DOT_SKIP_RATE]
-    rotated_dots = rotated_dots[::DOT_SKIP_RATE]
+    dots = dots[::settings["dot_skip_rate"]]
+    ghost_dots = ghost_dots[::settings["dot_skip_rate"]]
+    rotated_dots = rotated_dots[::settings["dot_skip_rate"]]
 
-    print("Dots count: {} + {}".format(prettifyNumber(len(dots)), prettifyNumber(len(ghost_dots))))
-
-    plot.scatter(dots)
-    if ghost_dots:
-        plot.scatter(ghost_dots, color="#ccc")
-    plot.fig.tight_layout()
-
-    print("Saving plot...")
-    plot.save(mkpath(output_folder, "sam_analyze.png"))
-
-    if show_plot:
-        print("Showing plot...")
-        plt.show()
-
-    del plot
+    print("Dots count: {} + {}\n".format(prettifyNumber(len(dots)), prettifyNumber(len(ghost_dots))))
 
     # return
 # ========================================================================================================================================
-    # Join rotations for large_actions
+    # Count lines
+    print("Counting lines...")
 
-    # rotations = sorted([action for action in large_actions if action[0] == 'R'], key=lambda action: action[1])
+    lines_join_size2 = settings["lines_join_size"] ** 2
+    line_min_size2 = settings["line_min_size"] ** 2
 
-    # for i in range(len(rotations) - 1, 0, -1):
-    #     last_query_pos, last_ref_pos, last_length = rotations[i - 1][1:4]
-    #     query_pos, ref_pos, length = rotations[i][1:4]
+    lines = []  # Struct: { [start_x, start_y, end_x, end_y, [dots]] }
 
-    #     print(rotations[i])
+    for x in range(0, len(graph), settings["dot_skip_rate"]):
+        for y in graph[x]:
+            for line in lines:
 
-    #     if last_query_pos + last_length + ROTATION_JOIN_SIZE >= query_pos:
-    #         rotations[i - 1][3] = (query_pos + length) - last_query_pos  # last_length
-    #         del rotations[i]
+                if distance2(x, y, *line[4][-1]) <= lines_join_size2 and \
+                        (len(line[4]) == 1 or distance2(x, y, *line[4][-2]) <= lines_join_size2):
+                    line[4].append([x, y])
+                    break
+            else:
+                lines.append([None, None, None, None, [[x, y]]])
 
-    # rotations.sort(key=lambda action: action[1])
+    for line in lines:
+        line[4].sort(key=lambda dot: dot[0])
+        k, b = linearApprox(line[4])
 
-    # print()
-    # for rotation in rotations:
-    #     print(rotation)
-    # print()
+        line[0] = line[4][0][0]
+        line[1] = k * line[0] + b
 
-    # large_actions = rotations + [action for action in large_actions if action[0] != 'R']
+        line[2] = line[4][-1][0]
+        line[3] = k * line[2] + b
 
-    dot_rotation_centers = [None] * len(dots)
+    lines = [line for line in lines if distance2(line[0], line[1], line[2], line[3]) >= line_min_size2]
 
-    for action_type, start_query_pos, start_ref_pos, length, rotation_center in rotations:
-        for i in range(len(dots)):
-            if start_query_pos <= dots[i][0] <= start_query_pos + length:
-                dot_rotation_centers[i] = rotation_center
+    print("{} lines".format(len(lines)))
 
-    large_actions = rotations + large_actions
+    # return
+# ========================================================================================================================================
+    # Handle events
 
-    large_actions.sort(key=lambda action: -abs(action[3]))
+    large_actions = []
 
-    # large_actions = [action for action in large_actions if action[0] == 'R'] + \
-    #                 [action for action in large_actions if action[0] != 'R']
+    lines.sort(key=lambda line: line[0])
+
+    for line in lines:
+        plot.line(line[0], line[1], line[2], line[3], color="black")
+
+    last_line = lines[0]
+    for line_index in range(1, len(lines)):
+        cur_line = lines[line_index]
+        last_query_start, last_ref_start, last_query_end, last_ref_end, last_dots = last_line
+        cur_query_start, cur_ref_start, cur_query_end, cur_ref_end, cur_dots = cur_line
+
+        if cur_query_start >= last_query_end and cur_ref_start >= last_ref_end:  # top right
+            insertion_length = cur_ref_start - last_ref_end
+            deletion_length = cur_query_start - last_query_end
+
+            if insertion_length >= settings["min_event_size"]:
+                large_actions.append(["Insertion", last_query_end, last_ref_end, insertion_length])
+
+            plot.line(last_query_end, last_ref_end, last_query_end, cur_ref_start, color="#0f0")
+
+            if deletion_length >= settings["min_event_size"]:
+                large_actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+
+            plot.line(last_query_end, cur_ref_start, cur_query_start, cur_ref_start, color="#f00")
+
+        elif cur_query_start < last_query_end and cur_ref_start >= last_ref_end:  # top left
+            tmp_dot_y = dotOnLineY(*last_line[:4], cur_query_start)
+            insertion_length = cur_ref_start - last_ref_end
+            duplication_length = last_query_end - cur_query_start
+            duplication_height = last_ref_end - tmp_dot_y
+
+            if insertion_length >= settings["min_event_size"]:
+                large_actions.append(["Insertion", cur_query_start, last_ref_end, insertion_length])
+
+            plot.line(cur_query_start, last_ref_end, cur_query_start, cur_ref_start, color="#0f0")
+
+            if duplication_length >= settings["min_event_size"]:
+                large_actions.append(["Duplication", cur_query_start, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
+
+            plot.poligon([
+                (cur_query_start, tmp_dot_y),
+                (cur_query_start, last_ref_end),
+                (last_query_end, last_ref_end)
+            ], color="#f0f")
+
+        elif cur_query_start >= last_query_end and cur_ref_start < last_ref_end:  # bottom right
+            deletion_length = cur_query_start - last_query_end
+            back_duplication_length = last_ref_end - cur_ref_start
+
+            if deletion_length >= settings["min_event_size"]:
+                large_actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+
+            plot.line(last_query_end, last_ref_end, cur_query_start, last_ref_end, color="#f00")
+
+            if back_duplication_length >= settings["min_event_size"]:
+                large_actions.append(["Back Dupication", last_query_end, last_ref_end, back_duplication_length])
+
+            plot.line(cur_query_start, last_ref_end, cur_query_start, cur_ref_start, color="#0ff")
+
+        else:
+            print("Unknown!!!")
+
+        if cur_query_end >= last_query_end:
+            last_line = cur_line
+
+    large_actions = rotations + sorted(large_actions, key=lambda action: -action[3])
 
     print(large_actions)
 
     # return
 # ========================================================================================================================================
+    # Save and show main plot
+
+    plot.fig.tight_layout()
+    print("Saving plot...\n")
+    plot.save(mkpath(output_folder, "sam_analyze.png"))
+
+    if show_plot:
+        print("Showing plot...\n")
+        plt.show()
+
+    del plot
+
+    plot = Plot("Main (dots)", query_genome_name, ref_genome_length, settings["grid_size"], settings["fontsize"], settings["figsize"])
+
+    plot.scatter(dots, dotsize=settings["dotsize"])
+    if ghost_dots:
+        plot.scatter(ghost_dots, dotsize=settings["dotsize"], color="#ccc")
+
+    plot.fig.tight_layout()
+    print("Saving dot plot...\n")
+    plot.save(mkpath(output_folder, "sam_analyze (dot plot).png"))
+    del plot
+
+    # return
+# ========================================================================================================================================
+    # Save history
 
     if not os.path.exists(mkpath(output_folder, "history")):
         os.mkdir(mkpath(output_folder, "history"))
@@ -553,89 +578,106 @@ def main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_fo
     for filename in os.listdir(mkpath(output_folder, "history")):
         os.remove(mkpath(output_folder, "history", filename))
 
-    large_actions = [['P', 0, 0, 0]] + large_actions
+    large_actions = [["Pass", 0, 0, 0]] + large_actions
+
+    print("History size: {} images\n".format(len(large_actions)))
 
     for action_index in range(len(large_actions)):
         action = large_actions[action_index]
         print(action)
-        # continue
-        action_type, start_query_pos, start_ref_pos, length = action[0:4]
+        action_type, start_query_pos, start_ref_pos, length = action[0:4]  # length - направленная длина!!! (уже нет) наверное, но это не точно
 
-        # length - направленная длина!!!
+        action_plot = Plot("large_action{}".format(action_index + 1), query_genome_name, ref_genome_length, settings["grid_size"], settings["fontsize"], settings["figsize"])
 
-        action_plot = Plot("large_action{}".format(action_index + 1), nameX=query_genome_name, nameY=ref_genome_name)
+        if action_type == "Rotation":
 
-        if action_type == 'R':
+            rotation_center = action[4]
 
-            rotated = lambda cur_ref_pos, i: (ref_genome_length - cur_ref_pos) + (dot_rotation_centers[i] - (ref_genome_length - cur_ref_pos)) * 2
-            # rotated = lambda cur_ref_pos: ref_genome_length - (action[4] + (action[4] - cur_ref_pos))
+            # for line in lines:
+            #     for i in range(len(line[4])):
+            #         if start_query_pos <= line[4][i][0] <= start_query_pos + length:
+            #             line[4][i][1] = line[4][i][1] - (line[4][i][1] - rotation_center) * 2
 
             for i in range(len(dots)):
                 if start_query_pos <= dots[i][0] <= start_query_pos + length:
-                    dots[i] = rotated_dots[i].copy()
-                    # dots[i][1] = ref_genome_length - (dot_rotation_centers[i] + (dot_rotation_centers[i] - dots[i][1]))
+                    dots[i][1] = dots[i][1] - (dots[i][1] - rotation_center) * 2
 
-        elif action_type == 'D':
-            for i in range(len(dots)):
-                if dots[i][0] >= start_query_pos + length:
-                    dots[i][0] -= length
+        elif action_type == "Deletion":
+
+            for line in lines:
+                for i in range(len(line[4])):
+                    if line[4][i][0] >= start_query_pos + length:
+                        line[4][i][0] -= length
+
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos + length:
                     large_actions[i][1] -= length
 
-        elif action_type == 'I':
-            print("I: query[{}] ref[{}] length[{}]".format(start_query_pos, start_ref_pos, length))
-            for i in range(len(dots)):
-                if dots[i][0] >= start_query_pos:
-                    dots[i][1] += length
-                    rotated_dots[i][1] += length
+        elif action_type == "Insertion":
+
+            for line in lines:
+                for i in range(len(line[4])):
+                    if line[4][i][0] >= start_query_pos:
+                        line[4][i][1] -= length
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] += length
+                    large_actions[i][2] -= length
 
-                # if large_actions[i][0] == 'R':
-                #     print("Was:", large_actions[i][4], "New:", large_actions[i][4] - length)
-                #     large_actions[i][4] -= length
+        elif action_type == "Duplication":
+            height, line_index = action[4], action[5]
 
-            bottom = INT_MAX
-            for dot_x, dot_y in dots:
-                bottom = min(bottom, dot_y)
+            new_dots = []
+            for dot in lines[line_index][4]:
+                if start_query_pos <= dot[0] <= start_query_pos + length:
+                    pass
+                else:
+                    new_dots.append(dot)
+            lines[line_index][4] = new_dots
 
-            for i in range(len(dots)):
-                dots[i][1] -= bottom
-                rotated_dots[i][1] -= bottom
-
-            # print(bottom, length)
+            for line in lines:
+                for i in range(len(line[4])):
+                    if line[4][i][0] >= start_query_pos:
+                        line[4][i][1] -= height
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] -= bottom
+                    large_actions[i][2] -= height
 
-        elif action_type == 'L':
+        elif action_type == "Back Dupication":
             pass
-            # ref_length = action[4]
-            # for i in range(len(dots)):
-            #     if dots[i][0] >= start_query_pos + length:
-            #         dots[i][0] -= length
-            # for i in range(action_index + 1, len(large_actions)):
-            #     if large_actions[i][1] >= start_query_pos + length:
-            #         large_actions[i][1] -= length
 
-        elif action_type == 'P':
+        elif action_type == "Pass":
             pass
 
         else:
             raise "Unknown action type"
 
-        action_plot.scatter(dots)
-        action_plot.fig.tight_layout()
-        print("Saving large action #{}...".format(action_index))
-        action_plot.save(mkpath(output_folder, "history", str(action_index) + ".png"))
-        action_plot.close()
+        if action_type in ("Pass", "Rotation"):
+            action_plot.scatter(dots, dotsize=settings["dotsize"], color="blue")
+        else:
+            # Adjusting axes (bottom):
+            bottom = INT_MAX
+            for line in lines:
+                for dot_x, dot_y in line[4]:
+                    bottom = min(bottom, dot_y)
 
-        print()
+            for line in lines:
+                for i in range(len(line[4])):
+                    line[4][i][1] -= bottom
+
+            for i in range(action_index + 1, len(large_actions)):
+                if large_actions[i][1] >= start_query_pos:
+                    large_actions[i][2] -= bottom
+
+            for line in lines:
+                action_plot.scatter(line[4], dotsize=settings["dotsize"], color="blue")
+
+        action_plot.fig.tight_layout()
+        print("Saving large action #{}...\n".format(action_index))
+        action_plot.save(mkpath(output_folder, "history", str(action_index).zfill(3) + ".png"))
+        del action_plot
 
 
 if __name__ == "__main__":
-    main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder)
+    main(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder, SETTINGS)
