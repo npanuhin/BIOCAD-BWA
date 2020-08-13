@@ -41,14 +41,14 @@ for foldername in os.listdir(mkpath("tests", "small")):
 SETTINGS = {
     "grid_size": int(1e5),
     "min_rid_size": int(1e3),
-    "dot_skip_rate": 10,
+    "dot_skip_rate": 500,
     "dotsize": 0.1,
     "fontsize": 10,
     "figsize": (10, 7),
 
     "min_event_size": int(1e3),
     "rotations_join_size": int(1e5),
-    "lines_join_size": "$min_event_size * 2",
+    "lines_join_size": "$min_event_size + 3",
     "line_min_size": "$min_event_size"
 }
 
