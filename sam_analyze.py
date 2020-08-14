@@ -66,11 +66,11 @@ CIGAR_FLAGS = [
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large5/large_genome1.fasta"
-ref_genome_path = "samples/large5/large_genome2.fasta"
-sam_file_path = "BWA/large5/bwa_output.sam"
+query_genome_path = "samples/large1/large_genome1.fasta"
+ref_genome_path = "samples/large1/large_genome2.fasta"
+sam_file_path = "BWA/large1/bwa_output.sam"
 show_plot = False
-output_folder = "tests/large5"
+output_folder = "tests/large1"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/deletion.fasta"
@@ -297,6 +297,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
 
     rotation_block_start, rotation_block_end = 0, 0
     last_rotation_query_end = None
+    rotation_block_min, rotation_block_max = INT_MAX, -INT_MAX
     for i in range(len(bwa_actions)):
         action = bwa_actions[i]
         start_query_pos, start_ref_pos, length, action_type, rotation_center = action
@@ -310,7 +311,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
             pass
 
         else:
-            new_rotation_center = (bwa_actions[rotation_block_start][1] + getActionRefEnd(bwa_actions[rotation_block_end])) / 2
+            new_rotation_center = (rotation_block_min + rotation_block_max) / 2
             for j in range(rotation_block_start, rotation_block_end + 1):
                 bwa_actions[j][4] = new_rotation_center
 
@@ -319,12 +320,15 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                 rotations.append(["Rotation", bwa_actions[rotation_block_start][0], bwa_actions[rotation_block_start][1], block_length, ref_genome_length - new_rotation_center])
 
             rotation_block_start = i
+            rotation_block_min, rotation_block_max = INT_MAX, -INT_MAX
 
         rotation_block_end = i
         last_rotation_query_end = getActionQueryEnd(action)
+        rotation_block_min = min(rotation_block_min, start_ref_pos, getActionRefEnd(action))
+        rotation_block_max = max(rotation_block_max, start_ref_pos, getActionRefEnd(action))
 
     if last_rotation_query_end is not None:
-        new_rotation_center = (bwa_actions[rotation_block_start][1] + getActionRefEnd(bwa_actions[rotation_block_end])) / 2
+        new_rotation_center = (rotation_block_min + rotation_block_max) / 2
         for j in range(rotation_block_start, rotation_block_end + 1):
             bwa_actions[j][4] = new_rotation_center
 
