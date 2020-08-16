@@ -24,7 +24,7 @@ vector<int> prefixFunction(vector<char>& s) {
 	return pi;
 }
 
-vector<int> knp(vector<char>& query, vector<char>& text) {
+vector<int> findAllSubstrings(vector<char>& query, vector<char>& text) {
 	int n1 = (int)query.size(), n1_2 = n1 * 2, n2 = (int)text.size(), n3 = n1 + n2 + 1;
 
 	vector<char> prefix_fun_text(query.begin(), query.end());
@@ -51,7 +51,7 @@ int knpTest() {
 
 	vector<char> search = {'T', 'T', 'A'};
 
-	vector<int> matches = knp(search, text);
+	vector<int> substrings = findAllSubstrings(search, text);
 
 	cout << "Test End" << endl << endl;
 }

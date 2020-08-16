@@ -9,12 +9,14 @@
 #include "BWT.h"
 #include "KNP.h"
 #include "fm-index.h"
+#include "k-mers.h"
 
 using namespace std;
 typedef long long LL;typedef long long ll;typedef unsigned long long uLL;typedef unsigned long long ull;typedef unsigned int uint;typedef unsigned char uchar;typedef long double ld;typedef long double Ld;
 
 int main() {
-	bwtTest();
-	knpTest();
-	fmIndexTest();
+	// bwtTest();
+	// knpTest();
+	// fmIndexTest();
+	k_MersTest();
 }
