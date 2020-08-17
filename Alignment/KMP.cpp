@@ -40,10 +40,10 @@ vector<int> findAllSubstrings(vector<char>& query, vector<char>& text) {
 	return res;
 }
 
-int knpTest() {
+int kmpTest() {
 	ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
 
-	cout << "Starting KNP test..." << endl;
+	cout << "Starting KMP test..." << endl;
 
 	ifstream input("../src/BWT/BWT_test_large.txt");
 	vector<char> text = readSeq(input);

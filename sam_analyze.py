@@ -39,7 +39,7 @@ SETTINGS = {
     "min_rid_size": int(1e3),
     "dot_skip_rate": 500,
     "dotsize": 0.1,
-    "fontsize": 10,
+    "fontsize": 8,
     "figsize": (10, 7),
 
     "min_event_size": int(1e3),
@@ -66,11 +66,11 @@ CIGAR_FLAGS = [
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large1/large_genome1.fasta"
-ref_genome_path = "samples/large1/large_genome2.fasta"
-sam_file_path = "BWA/large1/bwa_output.sam"
-show_plot = False
-output_folder = "tests/large1"
+query_genome_path = "samples/large7/large_genome1.fasta"
+ref_genome_path = "samples/large7/large_genome2.fasta"
+sam_file_path = "BWA/large7/bwa_output.sam"
+show_plot = True
+output_folder = "tests/large7"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/deletion.fasta"

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "BWT.h"
-#include "KNP.h"
+#include "KMP.h"
 #include "fm-index.h"
 #include "k-mers.h"
 
@@ -16,7 +16,7 @@ typedef long long LL;typedef long long ll;typedef unsigned long long uLL;typedef
 
 int main() {
 	// bwtTest();
-	// knpTest();
+	// kmpTest();
 	// fmIndexTest();
 	k_MersTest();
 }

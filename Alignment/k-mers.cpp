@@ -132,6 +132,8 @@ int k_MersTest() {
 
 	int left, right, middle;
 
+	long long count = 0;
+
 	// vector<vector<int>> hssp_matches(text2.size() - K);
 	// vector<pair<int, int>> seeds;
 
@@ -152,8 +154,11 @@ int k_MersTest() {
 						int x = l, y = pos[middle].second[i], cur_score = 0;
 						bool reached_score = false;
 
+						++count;
+
 						while (!reached_score || cur_score >= SCORE_THRESOLD) {
 							// TODO
+							break;
 						}
 					}
 					
@@ -168,6 +173,8 @@ int k_MersTest() {
 			}
 		}
 	}
+
+	cout << count << endl;
 
 	// for (int i = 0; i < hssp_matches.size(); ++i) {
 	// 	cout << hssp_matches[i].size() << endl;
