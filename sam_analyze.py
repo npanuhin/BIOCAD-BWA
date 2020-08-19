@@ -66,11 +66,11 @@ CIGAR_FLAGS = [
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large3/large_genome1.fasta"
-ref_genome_path = "samples/large3/large_genome2.fasta"
-sam_file_path = "BWA/large3/bwa_output.sam"
+query_genome_path = "samples/large5/large_genome1.fasta"
+ref_genome_path = "samples/large5/large_genome2.fasta"
+sam_file_path = "BWA/large5/bwa_output.sam"
 show_plot = False
-output_folder = "tests/large3"
+output_folder = "tests/large5"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/deletion.fasta"
@@ -480,7 +480,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
             plot.line(last_query_end, last_ref_end, cur_query_start, last_ref_end, color="#f00")
 
             if back_duplication_length >= settings["min_event_size"]:
-                large_actions.append(["Back Dupication", last_query_end, last_ref_end, back_duplication_length])
+                large_actions.append(["Translocation", last_query_end, last_ref_end, back_duplication_length])
 
             plot.line(cur_query_start, last_ref_end, cur_query_start, cur_ref_start, color="#0ff")
 
@@ -498,8 +498,8 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
 # ========================================================================================================================================
     print("Compressing dots...")
 
-    dots = dots[::settings["dot_skip_rate"]]
-    ghost_dots = ghost_dots[::settings["dot_skip_rate"]]
+    dots = sorted(dots)[::settings["dot_skip_rate"]]
+    ghost_dots = sorted(ghost_dots)[::settings["dot_skip_rate"]]
     for line in lines:
         line[4] = line[4][::settings["dot_skip_rate"]]
 
@@ -550,7 +550,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
         action_type, start_query_pos, start_ref_pos, length = action[0:4]  # length - направленная длина!!! (уже нет) наверное, но это не точно
 
         if action_type == "Rotation":
-
             rotation_center = action[4]
 
             # for line in lines:
@@ -563,7 +562,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                     dots[i][1] = dots[i][1] - (dots[i][1] - rotation_center) * 2
 
         elif action_type == "Deletion":
-
             for line in lines:
                 for i in range(len(line[4])):
                     if line[4][i][0] >= start_query_pos + length:
@@ -574,7 +572,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                     large_actions[i][1] -= length
 
         elif action_type == "Insertion":
-
             for line in lines:
                 for i in range(len(line[4])):
                     if line[4][i][0] >= start_query_pos:
@@ -604,8 +601,15 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                 if large_actions[i][1] >= start_query_pos:
                     large_actions[i][2] -= height
 
-        elif action_type == "Back Dupication":
-            pass
+        elif action_type == "Translocation":
+            for line in lines:
+                for i in range(len(line[4])):
+                    if line[4][i][0] >= start_query_pos:
+                        line[4][i][1] += length
+
+            for i in range(action_index + 1, len(large_actions)):
+                if large_actions[i][1] >= start_query_pos:
+                    large_actions[i][2] += length
 
         elif action_type == "Pass":
             pass
