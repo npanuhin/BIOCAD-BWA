@@ -6,7 +6,7 @@ import os
 
 import sys
 sys.path.append("src")
-from maplotlib_wrapper import Plot
+from sam_analyze_utils import Plot
 
 
 INT_MAX = int(1e9) + 7
@@ -66,11 +66,11 @@ CIGAR_FLAGS = [
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large7/large_genome1.fasta"
-ref_genome_path = "samples/large7/large_genome2.fasta"
-sam_file_path = "BWA/large7/bwa_output.sam"
-show_plot = True
-output_folder = "tests/large7"
+query_genome_path = "samples/large4/large_genome1.fasta"
+ref_genome_path = "samples/large4/large_genome2.fasta"
+sam_file_path = "BWA/large4/bwa_output.sam"
+show_plot = False
+output_folder = "tests/large4"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/deletion.fasta"
@@ -311,7 +311,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
             pass
 
         else:
-            new_rotation_center = (rotation_block_min + rotation_block_max) / 2
+            new_rotation_center = int((rotation_block_min + rotation_block_max) / 2)  # Warning! Int instead of float
             for j in range(rotation_block_start, rotation_block_end + 1):
                 bwa_actions[j][4] = new_rotation_center
 
@@ -328,7 +328,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
         rotation_block_max = max(rotation_block_max, start_ref_pos, getActionRefEnd(action))
 
     if last_rotation_query_end is not None:
-        new_rotation_center = (rotation_block_min + rotation_block_max) / 2
+        new_rotation_center = int((rotation_block_min + rotation_block_max) / 2)  # Warning! Int instead of float
         for j in range(rotation_block_start, rotation_block_end + 1):
             bwa_actions[j][4] = new_rotation_center
 
@@ -341,9 +341,9 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     # return
 # ========================================================================================================================================
     # Create dots
-    print("Creating gots...", end="")
+    print("Creating plot...")
 
-    plot = Plot("Main", settings["fontsize"], settings["grid_size"], settings["figsize"], query_genome_name, ref_genome_name)
+    plot = Plot("Main plot", settings["fontsize"], settings["grid_size"], settings["figsize"], query_genome_name, ref_genome_name)
     plot.legendLine({
         "Insertion": "#0f0",
         "Deletion": "#f00",
@@ -351,27 +351,29 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
         "Back Duplication": "#0ff"
     }, fontsize=settings["fontsize"], lw=2)
 
-    last_query_end, last_ref_end = None, None
+    # return
+# ========================================================================================================================================
+    # Create dots
+    print("Creating gots...", end="")
+
+    # last_query_end, last_ref_end = None, None
     dots, ghost_dots = [], []
     graph = [[] for _ in range(query_genome_length + 1)]
 
+    rotated = lambda cur_ref_pos: (ref_genome_length - cur_ref_pos) + ((ref_genome_length - rotation_center) - (ref_genome_length - cur_ref_pos)) * 2
+
     for action_index in range(len(bwa_actions)):
         cur_query_pos, cur_ref_pos, length, action_type, rotation_center = bwa_actions[action_index]
-
-        if rotation_center is None:
-            rotated = lambda cur_ref_pos: cur_ref_pos
-        else:
-            rotated = lambda cur_ref_pos: (ref_genome_length - cur_ref_pos) + ((ref_genome_length - rotation_center) - (ref_genome_length - cur_ref_pos)) * 2
 
         if action_type == 'M':
             for _ in range(length):
                 if rotation_center is None:
                     dots.append([cur_query_pos, cur_ref_pos])
+                    graph[cur_query_pos].append(cur_ref_pos)
                 else:
                     dots.append([cur_query_pos, ref_genome_length - cur_ref_pos])
                     ghost_dots.append([cur_query_pos, rotated(cur_ref_pos)])
-
-                graph[cur_query_pos].append(int(rotated(cur_ref_pos)))
+                    graph[cur_query_pos].append(rotated(cur_ref_pos))
 
                 cur_query_pos += 1
                 cur_ref_pos += 1
@@ -382,8 +384,8 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
         elif action_type == 'D':
             cur_query_pos += length
 
-        if last_query_end is None or cur_query_pos >= last_query_end:
-            last_query_end = cur_query_pos
+        # if last_query_end is None or cur_query_pos >= last_query_end:
+        #     last_query_end = cur_query_pos
 
     print(" {} + {}".format(prettifyNumber(len(dots)), prettifyNumber(len(ghost_dots))))
 
@@ -408,15 +410,17 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
             else:
                 lines.append([None, None, None, None, [[x, y]]])
 
+    # print("Approximating lines...")
+
     for line in lines:
-        line[4].sort(key=lambda dot: dot[0])
-        k, b = linearApprox(line[4])
+        line[4].sort()
 
-        line[0] = line[4][0][0]
-        line[1] = k * line[0] + b
+        line[0], line[1] = line[4][0]
+        line[2], line[3] = line[4][-1]
 
-        line[2] = line[4][-1][0]
-        line[3] = k * line[2] + b
+        # k, b = linearApprox(line[4])
+        # line[1] = k * line[0] + b
+        # line[3] = k * line[2] + b
 
     lines = [line for line in lines if distance2(line[0], line[1], line[2], line[3]) >= line_min_size2]
 
@@ -512,24 +516,23 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     # Save and show main plot
 
     print("Saving plot...")
-    plot.tight()
+    # plot.tight()
     plot.save(mkpath(output_folder, "sam_analyze.png"))
 
     if show_plot:
         print("Showing plot...")
         plot.show()
 
-    del plot
+    plot.clear()
 
-    plot = Plot("Main (dots)", settings["fontsize"], settings["grid_size"], settings["figsize"], query_genome_name, ref_genome_name)
     plot.scatter(dots, dotsize=settings["dotsize"])
     if ghost_dots:
         plot.scatter(ghost_dots, dotsize=settings["dotsize"], color="#ccc")
 
     print("Saving dot plot...")
-    plot.tight()
+    # plot.tight()
     plot.save(mkpath(output_folder, "sam_analyze (dot plot).png"))
-    del plot
+    plot.clear()
 
     # return
 # ========================================================================================================================================
@@ -545,8 +548,6 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
     large_actions = [["Pass", 0, 0, 0]] + large_actions
 
     print(" {} images\n".format(len(large_actions)))
-
-    history_plot = Plot("history", settings["fontsize"], settings["grid_size"], settings["figsize"], query_genome_name, ref_genome_name)
 
     for action_index in range(len(large_actions)):
         action = large_actions[action_index]
@@ -622,7 +623,7 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
             raise "Unknown action type"
 
         if action_type in ("Pass", "Rotation"):
-            history_plot.scatter(dots, dotsize=settings["dotsize"], color="blue")
+            plot.scatter(dots, dotsize=settings["dotsize"], color="blue")
         else:
             # Adjusting axes (bottom):
             bottom = INT_MAX
@@ -639,12 +640,14 @@ def main(query_genome_path: str, ref_genome_path: str, sam_file_path: str, show_
                     large_actions[i][2] -= bottom
 
             for line in lines:
-                history_plot.scatter(line[4], dotsize=settings["dotsize"], color="blue")
+                plot.scatter(line[4], dotsize=settings["dotsize"], color="blue")
 
         print("Saving large action #{}...\n".format(action_index))
-        history_plot.tight()
-        history_plot.save(mkpath(output_folder, "history", str(action_index).zfill(3) + ".png"))
-        history_plot.clear()
+        plot.tight()
+        plot.save(mkpath(output_folder, "history", str(action_index).zfill(3) + ".png"))
+        plot.clear()
+
+    del plot
 
 
 if __name__ == "__main__":

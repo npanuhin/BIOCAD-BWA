@@ -1,12 +1,38 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
+# from threading import Thread, Lock
+# from functools import wraps
+
+
+# def threded():
+#     def decorator(funtion):
+#         @wraps(funtion)
+#         def run(self, *args, **kwargs):
+#             self.thread = Thread(target=funtion, args=[self] + list(args), kwargs=kwargs)
+#             self.thread.start()
+#         return run
+#     return decorator
+
+
+# def threadSave():
+#     def decorator(funtion):
+#         @wraps(funtion)
+#         def run(self, *args, **kwargs):
+#             if self.thread is not None:
+#                 self.thread.join()
+
+#             funtion(self, *args, **kwargs)
+#         return run
+#     return decorator
 
 
 class Plot:
     def __init__(self, title, fontsize, grid_size=None, figsize=None, nameX=None, nameY=None):
         self.fig = plt.figure(title, figsize, tight_layout=True)
         self.ax = self.fig.add_subplot()
+
+        self.legend = None
 
         # self.fig.rc("font", size=fontsize)               # controls default text sizes
         # self.fig.rc("axes", titlesize=fontsize)          # fontsize of the axes title
@@ -31,6 +57,8 @@ class Plot:
         if nameY is not None:
             self.ax.set_ylabel(nameY)
 
+        # self.thread = None
+
     def __del__(self):
         self.close()
 
@@ -47,7 +75,7 @@ class Plot:
             legend_names.append(name)
             legend_objects.append(Line2D([0], [0], color=legend_dict[name], *line_args, **line_kwargs))
 
-        self.ax.legend(legend_objects, legend_names, fontsize=fontsize)
+        self.legend = self.ax.legend(legend_objects, legend_names, fontsize=fontsize)
 
     def poligon(self, dots, *args, **kwargs):
         self.ax.add_patch(Polygon(dots, *args, **kwargs))
@@ -65,8 +93,22 @@ class Plot:
         for artist in self.ax.lines + self.ax.collections:
             artist.remove()
 
+        if self.legend is not None:
+            self.legend.remove()
+
     def show(self):
         plt.show()
 
     def close(self):
         plt.close(self.fig)
+
+
+# class Threaded(Thread):
+#     def __init__(self, *args, **kwargs):
+#         self.target = kwargs.pop('target')
+#         self.finished = False
+#         super(Threaded, self).__init__(target=self.saveTarget, *args, **kwargs)
+
+#     def saveTarget(self):
+#         self.target()
+#         self.finished = True
