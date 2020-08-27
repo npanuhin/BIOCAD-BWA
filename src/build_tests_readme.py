@@ -9,22 +9,20 @@ def buildTests():
 
         test_folders = [foldername for foldername in os.listdir() if os.path.isdir(foldername) and foldername != "small"]
 
-        headers = ["|", "BLAST", "My plot", "Lines with actions", "History GIF"]
+        headers = ["|", "BLAST", "My plot", "History GIF"]
         table = []
 
         for test_folder in test_folders:
             # os.chdir(test_folder)
 
             blast_link = "https://raw.githubusercontent.com/npanuhin/BIOCAD_BWA/master/tests/{}/BLAST.png".format(test_folder)
-            dot_plot_link = "https://raw.githubusercontent.com/npanuhin/BIOCAD_BWA/master/tests/{}/sam_analyze (dot plot).png".format(test_folder)
             plot_link = "https://raw.githubusercontent.com/npanuhin/BIOCAD_BWA/master/tests/{}/sam_analyze.png".format(test_folder)
             history_link = "https://raw.githubusercontent.com/npanuhin/BIOCAD_BWA/master/tests/{}/history.gif".format(test_folder)
 
             table.append([
                 test_folder,
                 "[BLAST]({} \"View image\")".format(blast_link.replace(' ', "%20")),
-                "[My plot]({} \"View image\")".format(dot_plot_link.replace(' ', "%20")),
-                "[Lines with actions]({} \"View image\")".format(plot_link.replace(' ', "%20")),
+                "[My plot]({} \"View image\")".format(plot_link.replace(' ', "%20")),
                 "[History GIF]({} \"View GIF\")".format(history_link.replace(' ', "%20")),
             ])
 

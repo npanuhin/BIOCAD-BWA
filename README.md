@@ -1,8 +1,18 @@
-<h1 align="center">BWA</h1>
+<h1 align="center">BWA and SAM analysis</h1>
 
 > This repository is not intended to represent work, but rather to store and transmit data.
 
 For `SAM` and `pairwise` files *word wrap* should be disabled
+
+## Analysis status
+
+- ✅ large1
+- ✅ large2
+- ✅ large3
+- ✅ large4
+- ✅ large5
+- ❌ large6
+- ✅ large7
 
 
 ## How BWA works now
