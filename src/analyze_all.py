@@ -27,44 +27,42 @@ SETTINGS = {
 }
 
 for foldername in os.listdir(mkpath("tests", "small")):
-
-    sam_analyze.main(
+    sam_analyze.analyze(
         query_genome_path="samples/small/source.fasta",
         ref_genome_path="samples/small/{}.fasta".format(foldername),
         sam_file_path="BWA/small/{}/bwa_output.sam".format(foldername),
         show_plot=False,
         output_folder="tests/small/{}".format(foldername),
-        settings=SETTINGS
+        settings=SETTINGS.copy()
     )
 
 # Large
 SETTINGS = {
     "grid_size": int(1e5),
     "min_rid_size": int(1e3),
-    "dot_skip_rate": 500,
+    "dot_skip_rate": 10,
     "dotsize": 0.1,
-    "fontsize": 10,
+    "fontsize": 8,
     "figsize": (10, 7),
 
-    "min_event_size": int(1e3),
+    "min_event_size": int(5e3),
     "rotations_join_size": int(1e5),
     "lines_join_size": "$min_event_size + 3",
     "line_min_size": "$min_event_size"
 }
 
-
 for foldername in os.listdir("tests"):
     if not os.path.isdir(mkpath("tests", foldername)) or foldername.strip("/").strip("\\") == "small":
         continue
 
-    if foldername.strip("/").strip("\\") == "large7":
-        continue
+    # if foldername.strip("/").strip("\\") != "large6":
+    #     continue
 
-    sam_analyze.main(
+    sam_analyze.analyze(
         query_genome_path="samples/{}/large_genome1.fasta".format(foldername),
         ref_genome_path="samples/{}/large_genome2.fasta".format(foldername),
         sam_file_path="BWA/{}/bwa_output.sam".format(foldername),
         show_plot=False,
         output_folder="tests/{}".format(foldername),
-        settings=SETTINGS
+        settings=SETTINGS.copy()
     )

@@ -1,8 +1,69 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
+# from matplotlib.patches import ConnectionStyle
+from os.path import normpath as os_normpath, join as os_join, exists as os_exists
+from json import load as json_load
 # from threading import Thread, Lock
 # from functools import wraps
+
+
+def mkpath(*paths):
+    return os_normpath(os_join(*paths))
+
+
+def prettifyNumber(num):
+    return "{:,}".format(num)
+
+
+def equalE(value1, value2, E):
+    '''Epsilon comparison'''
+    return value1 - E < value2 < value1 + E
+
+
+def distance2(x1, y1, x2, y2):
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
+
+def linearApprox(dots):
+    n, sumx, sumy, sumx2, sumxy = len(dots), 0, 0, 0, 0
+    for x, y in dots:
+        sumx += x
+        sumy += y
+        sumx2 += x ** 2
+        sumxy += x * y
+
+    k = (n * sumxy - (sumx * sumy)) / (n * sumx2 - sumx * sumx)
+    b = (sumy - k * sumx) / n
+    return k, b
+
+
+def setSettings(settings, alternative_settings_path=None):
+    if alternative_settings_path is not None and os_exists(alternative_settings_path):
+        with open(alternative_settings_path, 'r', encoding="utf-8") as settings_file:
+            settings.update(json_load(settings_file))
+
+    counted = {}
+
+    for key, value in settings.items():
+        if not isinstance(value, str) or value[0] != '$':
+            if isinstance(value, float) and value % 1 == 0:
+                settings[key] = int(value)
+            counted[key] = value
+
+    while True:
+        for key, value in settings.items():
+            if key not in counted:
+                try:
+                    settings[key] = eval(value[1:], None, counted)
+                except NameError:
+                    continue
+                if isinstance(value, float) and value % 1 == 0:
+                    settings[key] = int(value)
+                counted[key] = value
+                break
+        else:
+            break
 
 
 # def threded():
@@ -25,6 +86,17 @@ from matplotlib.patches import Polygon
 #             funtion(self, *args, **kwargs)
 #         return run
 #     return decorator
+
+
+# class Threaded(Thread):
+#     def __init__(self, *args, **kwargs):
+#         self.target = kwargs.pop('target')
+#         self.finished = False
+#         super(Threaded, self).__init__(target=self.saveTarget, *args, **kwargs)
+
+#     def saveTarget(self):
+#         self.target()
+#         self.finished = True
 
 
 class Plot:
@@ -90,7 +162,7 @@ class Plot:
         self.fig.savefig(path, dpi=400, *args, **kwargs)
 
     def clear(self):
-        for artist in self.ax.lines + self.ax.collections:
+        for artist in self.ax.lines + self.ax.collections + self.ax.patches:
             artist.remove()
 
         if self.legend is not None:
@@ -101,14 +173,3 @@ class Plot:
 
     def close(self):
         plt.close(self.fig)
-
-
-# class Threaded(Thread):
-#     def __init__(self, *args, **kwargs):
-#         self.target = kwargs.pop('target')
-#         self.finished = False
-#         super(Threaded, self).__init__(target=self.saveTarget, *args, **kwargs)
-
-#     def saveTarget(self):
-#         self.target()
-#         self.finished = True

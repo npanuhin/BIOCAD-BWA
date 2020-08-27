@@ -1,3 +1,5 @@
 {
-	"min_event_size": 5e4
+	"min_event_size": 1e5, 
+	"lines_join_size": 2e5,
+	"rotations_join_size": 1e10
 }
