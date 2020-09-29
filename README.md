@@ -6,6 +6,10 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 
 ## Analysis status
 
+✅ - Works as intended
+⚠ - There are problems, but the solution is possible
+❌ - There are problems that make the solution wrong
+
 - ✅ large1
 - ✅ large2
 - ✅ large3
@@ -13,6 +17,7 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 - ✅ large5
 - ❌ large6
 - ✅ large7
+- ✅ small (BWA⚠)
 
 
 ## How BWA works now

@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 import os
 
 
-def createGif(path_in, path_out, delay=20, resize=0.3):
+def createGif(path_in, path_out, delay=50, resize=0.3):
     s = Popen(
         "convert -delay {} -loop 0 {} -resize {}% {}".format(delay, path_in, resize * 100, path_out),
         shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()
@@ -17,7 +17,7 @@ def main():
 
     os.chdir("history")
 
-    print("Now in {}".format(os.getcwd()))
+    print("Processing {}".format(os.getcwd()))
 
     createGif("*.png", "../history.gif")
 

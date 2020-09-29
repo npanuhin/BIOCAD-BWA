@@ -1,6 +1,9 @@
 import os
 from sys import path as sys_path
-sys_path.append("../")
+
+os.chdir("../")
+
+sys_path.append(".")
 
 import sam_analyze
 
@@ -8,8 +11,6 @@ import sam_analyze
 def mkpath(*paths):
     return os.path.normpath(os.path.join(*paths))
 
-
-os.chdir("../")
 
 # Small
 SETTINGS = {
