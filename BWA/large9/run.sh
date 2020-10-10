@@ -1,0 +1,1 @@
+../BWA.sh ../../samples/large9/large_genome1.fasta ../../samples/large9/large_genome2.fasta

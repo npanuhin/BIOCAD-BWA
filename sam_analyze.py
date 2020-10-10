@@ -156,7 +156,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         "Insertion": "#0f0",
         "Deletion": "#f00",
         "Duplication": "#f0f",
-        "Back Duplication": "#0ff"
+        "Translocation": "#0ff"
     }, fontsize=settings["fontsize"], lw=2)
 
     # return
