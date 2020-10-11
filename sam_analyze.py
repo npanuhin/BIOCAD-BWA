@@ -1,12 +1,12 @@
 from string import ascii_uppercase
 from Bio.SeqIO.FastaIO import SimpleFastaParser
-from json import load as json_load, dump as json_dump
+from json import load as json_load  # , dump as json_dump
 from copy import deepcopy
 import os
 
 import sys
 sys.path.append("src")
-from sam_analyze_utils import mkpath, prettifyNumber, distance2, linearApprox, YCoordOnLine, setSettings, Plot
+from sam_analyze_utils import mkpath, prtNum, distance2, linearApprox, YCoordOnLine, setSettings, Plot
 
 
 INT_MAX = int(1e9) + 7
@@ -54,11 +54,11 @@ with open(mkpath("src", "CIGAR_FLAGS.json"), 'r', encoding="utf-8") as file:
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large7/large_genome1.fasta"
-ref_genome_path = "samples/large7/large_genome2.fasta"
-sam_file_path = "BWA/large7/bwa_output.sam"
+query_genome_path = "samples/large3/large_genome1.fasta"
+ref_genome_path = "samples/large3/large_genome2.fasta"
+sam_file_path = "BWA/large3/bwa_output.sam"
 show_plot = True
-output_folder = "tests/large7"
+output_folder = "tests/large3"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/duplication.fasta"
@@ -179,7 +179,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     del segments
 
-    print(" {}".format(prettifyNumber(count)))  # Can be with optional compress: count // N
+    print(" {}".format(prtNum(count)))  # Can be with optional compress: count // N
 
     # return
 # ====================================================================================================================================================================
@@ -189,7 +189,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     lines_join_size2 = settings["lines_join_size"] ** 2
     line_min_size2 = settings["line_min_size"] ** 2
 
-    lines = []  # Struct: { [start_x, start_y, end_x, end_y, [dots]] }
+    lines = []
 
     for x in range(0, len(graph), settings["dot_skip_rate"]):
         for y in graph[x]:
@@ -379,21 +379,48 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             last_line = cur_line
 
     # new_actions = []
+    # last_i_t_action_index = None
     # for action_index, action in enumerate(actions):
-    #     if action_index > 0 and actions[action_index - 1][0] == "Insertion" and actions[action_index][0] == "Translocation":
-    #         # if action[action_index - 1][3] >=
-    #         new_actions.append(["Translocation", *action[action_index - 1][1:4]])
-    #         new_actions.append(["Insertion"])
-    #         action[action_index - 1] = ["Translocation", *action[action_index - 1][1:4]]
-    #         actions
+    #     if action_index > 0 and actions[last_i_t_action_index][0] == "Insertion" and actions[action_index][0] == "Translocation":
+
+    #         if actions[last_i_t_action_index][3] >= actions[action_index][3]:  # Insertion bigger
+    #             print("Insertion bigger")
+
+    #         else:  # Translocation bigger
+    #             new_actions.append([
+    #                 "Translocation",
+    #                 actions[last_i_t_action_index][1],
+    #                 actions[last_i_t_action_index][2] + actions[last_i_t_action_index][3],
+    #                 actions[last_i_t_action_index][3]
+    #             ])
+    #             new_actions.append([
+    #                 "Translocation",
+    #                 actions[action_index][1],
+    #                 actions[action_index][2] - actions[last_i_t_action_index][3],
+    #                 actions[action_index][3] - actions[last_i_t_action_index][3]
+    #             ])
     #     else:
     #         new_actions.append(action)
+
+    #     if action[0] in ("Insertion", "Translocation"):
+    #         last_i_t_action_index = action_index
+
+    # print()
+    # print("\nlarge_actions:", actions)
+    # print("\nnew_actions:", new_actions)
+
+    # new_actions = [action for action in new_actions if action[3] >= settings["min_event_size"]]
+    # new_actions.sort(key=lambda action: -action[3])
 
     large_actions = [action for action in actions if action[3] >= settings["min_event_size"]]
     large_actions.sort(key=lambda action: -action[3])
 
     # print(actions)
-    print(large_actions)
+    print("\nlarge_actions:", large_actions)
+    # print("\nnew_actions:", new_actions)
+    # print()
+
+    # large_actions = new_actions
 
     # return
 # ====================================================================================================================================================================
@@ -435,8 +462,33 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     large_actions = [["Pass", 0, 0, 0]] + rotation_actions + large_actions
 
-    with open(mkpath(output_folder, "history.json"), 'w', encoding="utf-8") as file:
-        json_dump(large_actions[1:], file, ensure_ascii=False, indent=4)
+    with open(mkpath(output_folder, "history.txt"), 'w', encoding="utf-8") as history_file:
+        for action in large_actions:
+
+            if action[0] == "Rotation":
+                print("Rotation from {} (Query) to {} (Query)\n".format(
+                    prtNum(int(lines[action[1]][0])), prtNum(int(lines[action[2]][2]))
+                ), file=history_file)
+
+            elif action[0] == "Insertion":
+                print("Insertion of {}-{} (Ref) to {} (Query)\n".format(
+                    prtNum(int(action[2])), prtNum(int(action[2] + action[3])), prtNum(int(action[1]))
+                ), file=history_file)
+
+            elif action[0] == "Deletion":
+                print("Deletion of {}-{} (Query) from {} (Ref)\n".format(
+                    prtNum(int(action[1])), prtNum(int(action[1] + action[3])), prtNum(int(action[2]))
+                ), file=history_file)
+
+            elif action[0] == "Duplication":
+                print("Duplication of {}-{} (Query) {}-{} (Ref)\n".format(
+                    prtNum(int(action[1])), prtNum(int(action[1] + action[3])), prtNum(int(action[2])), prtNum(int(action[2] + action[4]))
+                ), file=history_file)
+
+            elif action[0] == "Translocation":
+                print("Translocation of {}-END (Query) from {} (Ref) to {} (Ref)\n".format(
+                    prtNum(int(action[1])), prtNum(int(action[2] - action[3])), prtNum(int(action[2]))
+                ), file=history_file)
 
     print(" {} images\n".format(len(large_actions)))
 

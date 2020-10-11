@@ -12,8 +12,8 @@ def mkpath(*paths):
     return os_normpath(os_join(*paths))
 
 
-def prettifyNumber(num):
-    return "{:,}".format(num)
+def prtNum(num):
+    return "{:,}".format(num).replace(',', "'")
 
 
 def equalE(value1, value2, E):
