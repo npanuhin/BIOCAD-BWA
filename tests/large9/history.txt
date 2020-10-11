@@ -1,0 +1,86 @@
+Rotation from 235'790 (Query) to 243'600 (Query)
+
+Rotation from 625'130 (Query) to 807'400 (Query)
+
+Rotation from 992'710 (Query) to 1'078'990 (Query)
+
+Rotation from 2'382'610 (Query) to 2'494'400 (Query)
+
+Rotation from 711'680 (Query) to 728'700 (Query)
+
+Insertion of 528'360-703'455 (Ref) to 741'150 (Query)
+
+Insertion of 722'674-882'983 (Ref) to 991'000 (Query)
+
+Translocation of 555'580-END (Query) from 401'095 (Ref) to 546'460 (Ref)
+
+Deletion of 807'400-950'930 (Query) from 714'262 (Ref)
+
+Translocation of 999'670-END (Query) from 768'555 (Ref) to 889'958 (Ref)
+
+Translocation of 431'710-END (Query) from 437'246 (Ref) to 552'576 (Ref)
+
+Insertion of 437'788-548'499 (Ref) to 419'880 (Query)
+
+Insertion of 774'998-869'685 (Ref) to 1'078'990 (Query)
+
+Deletion of 999'670-1'072'450 (Query) from 889'958 (Ref)
+
+Deletion of 555'580-625'130 (Query) from 546'460 (Ref)
+
+Deletion of 741'150-796'600 (Query) from 528'360 (Ref)
+
+Translocation of 975'030-END (Query) from 717'697 (Ref) to 767'502 (Ref)
+
+Deletion of 1'437'510-1'483'840 (Query) from 1'244'748 (Ref)
+
+Insertion of 400'330-431'455 (Ref) to 409'670 (Query)
+
+Insertion of 714'262-742'719 (Ref) to 807'400 (Query)
+
+Insertion of 335'906-354'607 (Ref) to 343'070 (Query)
+
+Deletion of 343'070-361'000 (Query) from 335'906 (Ref)
+
+Deletion of 2'241'150-2'258'760 (Query) from 2'049'788 (Ref)
+
+Deletion of 497'670-512'870 (Query) from 504'210 (Ref)
+
+Insertion of 1'652'146-1'666'972 (Ref) to 1'872'860 (Query)
+
+Insertion of 874'544-889'143 (Ref) to 1'086'560 (Query)
+
+Insertion of 1'371'313-1'381'302 (Ref) to 1'603'790 (Query)
+
+Deletion of 975'030-984'330 (Query) from 767'502 (Ref)
+
+Deletion of 316'720-324'900 (Query) from 317'354 (Ref)
+
+Insertion of 411'113-419'228 (Ref) to 635'150 (Query)
+
+Deletion of 2'431'420-2'439'450 (Query) from 2'252'989 (Ref)
+
+Insertion of 2'049'788-2'057'674 (Ref) to 2'241'150 (Query)
+
+Deletion of 419'880-427'640 (Query) from 437'788 (Ref)
+
+Deletion of 1'240'100-1'247'840 (Query) from 1'041'652 (Ref)
+
+Insertion of 2'220'315-2'227'717 (Ref) to 2'407'430 (Query)
+
+Insertion of 1'041'652-1'048'981 (Ref) to 1'240'100 (Query)
+
+Insertion of 1'187'084-1'193'157 (Ref) to 1'385'920 (Query)
+
+Insertion of 1'244'748-1'250'624 (Ref) to 1'437'510 (Query)
+
+Insertion of 2'361'191-2'367'000 (Ref) to 2'540'820 (Query)
+
+Insertion of 1'386'699-1'392'264 (Ref) to 1'608'640 (Query)
+
+Deletion of 409'670-415'070 (Query) from 400'330 (Ref)
+
+Deletion of 377'040-382'200 (Query) from 371'649 (Ref)
+
+Deletion of 635'150-640'180 (Query) from 411'113 (Ref)
+

@@ -1,0 +1,8 @@
+Insertion of 179-360 (Ref) to 180 (Query)
+
+Deletion of 180-361 (Query) from 179 (Ref)
+
+Insertion of 659-840 (Ref) to 660 (Query)
+
+Deletion of 660-841 (Query) from 659 (Ref)
+
