@@ -196,13 +196,11 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     for x in range(0, len(graph), settings["dot_skip_rate"]):
         for y in graph[x]:
             for line in lines:
-
                 if distance2(x, y, *line.dots[-1]) <= lines_join_size2 and \
                         (len(line.dots) == 1 or distance2(x, y, *line.dots[-2]) <= lines_join_size2):
                     line.dots.append([x, y])
                     break
             else:
-                # lines.append([None, None, None, None, [[x, y]]])
                 lines.append(Line(dots=[[x, y]]))
 
     for line in lines:
@@ -212,9 +210,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         line.end_x, line.end_y = line.dots[-1]
 
         if len(line.dots) >= 2:
-            k, b = linearApprox(line.dots)  # \
-            line.start_y = k * line.start_x + b     # |--> Approximation
-            line.end_y = k * line.end_x + b     # /
+            k, b = linearApprox(line.dots)        # \
+            line.start_y = k * line.start_x + b   # |--> Approximation
+            line.end_y = k * line.end_x + b       # /
 
         # line[4] = line[4][::settings["dot_skip_rate"]]  # Optional compress
 
@@ -222,8 +220,8 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     lines.sort(key=lambda line: (line.start_x, line.start_y))
 
-    # print(*[line[0:4] for line in lines], sep='\n')
     print(" {} lines".format(len(lines)))
+    # print(*[line.coords for line in lines], sep='\n')
 
     # return
 # ====================================================================================================================================================================
@@ -296,9 +294,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     for _ in range(100):  # TODO: endless loop => const 100
         for i in range(len(rotated_lines)):
             if rotated_lines[i].end_y < rotated_lines[i].start_y:
-                cur_rotation_actions = rotateLines(rotated_lines)
-                # TODO: endless loop?
-                rotation_actions += cur_rotation_actions
+                rotation_actions += rotateLines(rotated_lines)
                 break
         else:
             break
@@ -318,23 +314,15 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     last = rotated_lines[0]
     for line_index in range(1, len(rotated_lines)):
         cur = rotated_lines[line_index]
-        # last_query_start, last_ref_start, last_query_end, last_ref_end, last_dots = last
-        # cur_query_start, cur_ref_start, cur_query_end, cur_ref_end, cur_dots = cur
 
         if cur.start_x >= last.end_x and cur.start_y >= last.end_y:  # top right
             insertion_length = cur.start_y - last.end_y
             deletion_length = cur.start_x - last.end_x
 
             actions.append(["Insertion", last.end_x, last.end_y, insertion_length])
-            # if insertion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Insertion", last.end_x, last.end_y, insertion_length])
-
             plot.line(last.end_x, last.end_y, last.end_x, cur.start_y, color="#0f0")
 
             actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
-            # if deletion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
-
             plot.line(last.end_x, cur.start_y, cur.start_x, cur.start_y, color="#f00")
 
         elif cur.start_x < last.end_x and cur.start_y >= last.end_y:  # top left
@@ -344,15 +332,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             duplication_height = last.end_y - tmp_dot_y
 
             actions.append(["Insertion", cur.start_x, last.end_y, insertion_length])
-            # if insertion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Insertion", cur.start_x, last.end_y, insertion_length])
-
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0f0")
 
             actions.append(["Duplication", cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
-            # if duplication_length >= settings["min_event_size"]:
-            #     large_actions.append(["Duplication", cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
-
             plot.poligon([
                 (cur.start_x, tmp_dot_y),
                 (cur.start_x, last.end_y),
@@ -364,15 +346,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             translocation_length = last.end_y - cur.start_y
 
             actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
-            # if deletion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
-
             plot.line(last.end_x, last.end_y, cur.start_x, last.end_y, color="#f00")
 
             actions.append(["Translocation", last.end_x, last.end_y, translocation_length])
-            # if translocation_length >= settings["min_event_size"]:
-            #     large_actions.append(["Translocation", last.end_x, last.end_y, translocation_length])
-
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0ff")
 
         else:
@@ -395,11 +371,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     for line in lines:
         plot.plotLine(line, color="#fa0")
-        # plot.line(*line.coords, color="#fa0")
 
     for line in rotated_lines:
         plot.plotLine(line, color="#000")
-        # plot.line(*line.coords, color="#000")
 
     dots = []  # Optional compress
     for x in range(0, len(graph), settings["dot_skip_rate"]):
