@@ -6,8 +6,10 @@ import os
 
 import sys
 sys.path.append("src")
-from sam_analyze_utils import mkpath, prtNum, distance2, linearApprox, YCoordOnLine, setSettings, Plot
+from utils import mkpath, prtNum, distance2, linearApprox, YCoordOnLine, setSettings
 
+from Line import Line
+from Plot import Plot
 
 INT_MAX = int(1e9) + 7
 
@@ -86,8 +88,8 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             ref_genome_length = len(sequence)
             break
 
-    print("Query: {} [{}]".format(query_genome_name, query_genome_length))
-    print("Reference: {} [{}]\n".format(ref_genome_name, ref_genome_length))
+    print("Query: {} [{}]".format(query_genome_name, prtNum(query_genome_length)))
+    print("Reference: {} [{}]\n".format(ref_genome_name, prtNum(ref_genome_length)))
 
     # return
 # ====================================================================================================================================================================
@@ -195,29 +197,30 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         for y in graph[x]:
             for line in lines:
 
-                if distance2(x, y, *line[4][-1]) <= lines_join_size2 and \
-                        (len(line[4]) == 1 or distance2(x, y, *line[4][-2]) <= lines_join_size2):
-                    line[4].append([x, y])
+                if distance2(x, y, *line.dots[-1]) <= lines_join_size2 and \
+                        (len(line.dots) == 1 or distance2(x, y, *line.dots[-2]) <= lines_join_size2):
+                    line.dots.append([x, y])
                     break
             else:
-                lines.append([None, None, None, None, [[x, y]]])
+                # lines.append([None, None, None, None, [[x, y]]])
+                lines.append(Line(dots=[[x, y]]))
 
     for line in lines:
-        line[4].sort()
+        line.dots.sort()
 
-        line[0], line[1] = line[4][0]
-        line[2], line[3] = line[4][-1]
+        line.start_x, line.start_y = line.dots[0]
+        line.end_x, line.end_y = line.dots[-1]
 
-        if len(line[4]) >= 2:
-            k, b = linearApprox(line[4])  # \
-            line[1] = k * line[0] + b     # |--> Approximation
-            line[3] = k * line[2] + b     # /
+        if len(line.dots) >= 2:
+            k, b = linearApprox(line.dots)  # \
+            line.start_y = k * line.start_x + b     # |--> Approximation
+            line.end_y = k * line.end_x + b     # /
 
         # line[4] = line[4][::settings["dot_skip_rate"]]  # Optional compress
 
-    lines = [line for line in lines if distance2(line[0], line[1], line[2], line[3]) >= line_min_size2]
+    lines = [line for line in lines if distance2(line.start_x, line.start_y, line.end_x, line.end_y) >= line_min_size2]
 
-    lines.sort(key=lambda line: (line[0], line[1]))
+    lines.sort(key=lambda line: (line.start_x, line.start_y))
 
     # print(*[line[0:4] for line in lines], sep='\n')
     print(" {} lines".format(len(lines)))
@@ -228,48 +231,48 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     print("Joining rotations...")
 
     def rotateLines(lines):
-        print("Rotation:")
+        # print("Rotation:")
         rotation_center, rotation_actions = [None] * len(lines), []
-        rotation_start = [(i if lines[i][3] < lines[i][1] else None) for i in range(len(lines))]
+        rotation_start = [(i if lines[i].end_y < lines[i].start_y else None) for i in range(len(lines))]
 
-        # print(*[line[0:4] for line in lines], sep='\n')
+        # print(*[line.coords for line in lines], sep='\n')
 
         # Counting rotation_start
         last_rotation = None
-        for i in range(len(lines)):
-            if rotation_start[i] is not None:
-                if i > 0 and rotation_start[i - 1] is not None:
-                    rotation_start[i] = rotation_start[i - 1]
-                if last_rotation is not None and lines[i][0] <= lines[last_rotation][2] + settings["rotations_join_size"]:
-                    rotation_start[i] = rotation_start[last_rotation]
+        for line_index in range(len(lines)):
+            if rotation_start[line_index] is not None:
+                if line_index > 0 and rotation_start[line_index - 1] is not None:
+                    rotation_start[line_index] = rotation_start[line_index - 1]
+                if last_rotation is not None and lines[line_index].start_x <= lines[last_rotation].end_x + settings["rotations_join_size"]:
+                    rotation_start[line_index] = rotation_start[last_rotation]
 
-                # if rotation_start[i] is not None and min(lines[i][1], lines[i][3]) >= max(lines[rotation_start[i]][1], lines[rotation_start[i]][3]):
-                #     rotation_start[i] = i
+                # if rotation_start[line_index] is not None and min(lines[line_index].start_y, lines[line_index].end_y) >= max(lines[rotation_start[line_index]].start_y, lines[rotation_start[line_index]].end_y):
+                #     rotation_start[line_index] = line_index
 
-                last_rotation = i
+                last_rotation = line_index
 
         # Counting rotation_center and rotation_actions
-        cur_line = len(lines) - 1
-        while cur_line >= 0:
-            if rotation_start[cur_line] is None:
-                cur_line -= 1
+        line_index = len(lines) - 1
+        while line_index >= 0:
+            if rotation_start[line_index] is None:
+                line_index -= 1
                 continue
 
             min_value, max_value = INT_MAX, -INT_MAX
 
-            for i in range(rotation_start[cur_line], cur_line + 1):
-                min_value = min(min_value, lines[i][1], lines[i][3])
-                max_value = max(max_value, lines[i][1], lines[i][3])
+            for i in range(rotation_start[line_index], line_index + 1):
+                min_value = min(min_value, lines[i].start_y, lines[i].end_y)
+                max_value = max(max_value, lines[i].start_y, lines[i].end_y)
 
-            for i in range(rotation_start[cur_line], cur_line + 1):
+            for i in range(rotation_start[line_index], line_index + 1):
                 rotation_center[i] = (min_value + max_value) // 2
 
-            if lines[cur_line][2] - lines[rotation_start[cur_line]][0] >= settings["min_event_size"]:
-                rotation_actions.append(["Rotation", rotation_start[cur_line], cur_line, rotation_center[cur_line]])
+            if lines[line_index].end_x - lines[rotation_start[line_index]].start_x >= settings["min_event_size"]:
+                rotation_actions.append(["Rotation", rotation_start[line_index], line_index, rotation_center[line_index]])
 
             # plot.hline(rotation_center[i], color='#ff0', linestyle='-')
 
-            cur_line = rotation_start[cur_line] - 1
+            line_index = rotation_start[line_index] - 1
 
         rotation_actions.sort(key=lambda action: (action[1], action[2]))
 
@@ -280,19 +283,19 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         for i in range(len(lines)):
             if rotation_center[i] is not None:
                 line = lines[i]
-                line[1] -= (line[1] - rotation_center[i]) * 2
-                line[3] -= (line[3] - rotation_center[i]) * 2
+                line.start_y -= (line.start_y - rotation_center[i]) * 2
+                line.end_y -= (line.end_y - rotation_center[i]) * 2
 
-                for j in range(len(line[4])):
-                    line[4][j][1] -= (line[4][j][1] - rotation_center[i]) * 2
+                for j in range(len(line.dots)):
+                    line.dots[j][1] -= (line.dots[j][1] - rotation_center[i]) * 2
 
         return rotation_actions
 
     rotated_lines, rotation_actions = deepcopy(lines), []
 
-    for _ in range(100):
+    for _ in range(100):  # TODO: endless loop => const 100
         for i in range(len(rotated_lines)):
-            if rotated_lines[i][3] < rotated_lines[i][1]:
+            if rotated_lines[i].end_y < rotated_lines[i].start_y:
                 cur_rotation_actions = rotateLines(rotated_lines)
                 # TODO: endless loop?
                 rotation_actions += cur_rotation_actions
@@ -303,7 +306,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     else:
         exit("Endless loop!!!")
 
-    print([line[:4] for line in lines])
+    print([line.coords for line in lines])
 
     # return
 # ====================================================================================================================================================================
@@ -312,115 +315,78 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     actions = []
 
-    last_line = rotated_lines[0]
+    last = rotated_lines[0]
     for line_index in range(1, len(rotated_lines)):
-        cur_line = rotated_lines[line_index]
-        last_query_start, last_ref_start, last_query_end, last_ref_end, last_dots = last_line
-        cur_query_start, cur_ref_start, cur_query_end, cur_ref_end, cur_dots = cur_line
+        cur = rotated_lines[line_index]
+        # last_query_start, last_ref_start, last_query_end, last_ref_end, last_dots = last
+        # cur_query_start, cur_ref_start, cur_query_end, cur_ref_end, cur_dots = cur
 
-        if cur_query_start >= last_query_end and cur_ref_start >= last_ref_end:  # top right
-            insertion_length = cur_ref_start - last_ref_end
-            deletion_length = cur_query_start - last_query_end
+        if cur.start_x >= last.end_x and cur.start_y >= last.end_y:  # top right
+            insertion_length = cur.start_y - last.end_y
+            deletion_length = cur.start_x - last.end_x
 
-            actions.append(["Insertion", last_query_end, last_ref_end, insertion_length])
+            actions.append(["Insertion", last.end_x, last.end_y, insertion_length])
             # if insertion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Insertion", last_query_end, last_ref_end, insertion_length])
+            #     large_actions.append(["Insertion", last.end_x, last.end_y, insertion_length])
 
-            plot.line(last_query_end, last_ref_end, last_query_end, cur_ref_start, color="#0f0")
+            plot.line(last.end_x, last.end_y, last.end_x, cur.start_y, color="#0f0")
 
-            actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+            actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
             # if deletion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+            #     large_actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
 
-            plot.line(last_query_end, cur_ref_start, cur_query_start, cur_ref_start, color="#f00")
+            plot.line(last.end_x, cur.start_y, cur.start_x, cur.start_y, color="#f00")
 
-        elif cur_query_start < last_query_end and cur_ref_start >= last_ref_end:  # top left
-            tmp_dot_y = YCoordOnLine(*last_line[:4], cur_query_start)
-            insertion_length = cur_ref_start - last_ref_end
-            duplication_length = last_query_end - cur_query_start
-            duplication_height = last_ref_end - tmp_dot_y
+        elif cur.start_x < last.end_x and cur.start_y >= last.end_y:  # top left
+            tmp_dot_y = YCoordOnLine(*last.coords, cur.start_x)
+            insertion_length = cur.start_y - cur.end_y
+            duplication_length = last.end_x - cur.start_x
+            duplication_height = last.end_y - tmp_dot_y
 
-            actions.append(["Insertion", cur_query_start, last_ref_end, insertion_length])
+            actions.append(["Insertion", cur.start_x, last.end_y, insertion_length])
             # if insertion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Insertion", cur_query_start, last_ref_end, insertion_length])
+            #     large_actions.append(["Insertion", cur.start_x, last.end_y, insertion_length])
 
-            plot.line(cur_query_start, last_ref_end, cur_query_start, cur_ref_start, color="#0f0")
+            plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0f0")
 
-            actions.append(["Duplication", cur_query_start, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
+            actions.append(["Duplication", cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
             # if duplication_length >= settings["min_event_size"]:
-            #     large_actions.append(["Duplication", cur_query_start, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
+            #     large_actions.append(["Duplication", cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
 
             plot.poligon([
-                (cur_query_start, tmp_dot_y),
-                (cur_query_start, last_ref_end),
-                (last_query_end, last_ref_end)
+                (cur.start_x, tmp_dot_y),
+                (cur.start_x, last.end_y),
+                (last.end_x, last.end_y)
             ], color="#f0f")
 
-        elif cur_query_start >= last_query_end and cur_ref_start < last_ref_end:  # bottom right
-            deletion_length = cur_query_start - last_query_end
-            translocation_length = last_ref_end - cur_ref_start
+        elif cur.start_x >= last.end_x and cur.start_y < last.end_y:  # bottom right
+            deletion_length = cur.start_x - last.end_x
+            translocation_length = last.end_y - cur.start_y
 
-            actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+            actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
             # if deletion_length >= settings["min_event_size"]:
-            #     large_actions.append(["Deletion", last_query_end, last_ref_end, deletion_length])
+            #     large_actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
 
-            plot.line(last_query_end, last_ref_end, cur_query_start, last_ref_end, color="#f00")
+            plot.line(last.end_x, last.end_y, cur.start_x, last.end_y, color="#f00")
 
-            actions.append(["Translocation", last_query_end, last_ref_end, translocation_length])
+            actions.append(["Translocation", last.end_x, last.end_y, translocation_length])
             # if translocation_length >= settings["min_event_size"]:
-            #     large_actions.append(["Translocation", last_query_end, last_ref_end, translocation_length])
+            #     large_actions.append(["Translocation", last.end_x, last.end_y, translocation_length])
 
-            plot.line(cur_query_start, last_ref_end, cur_query_start, cur_ref_start, color="#0ff")
+            plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0ff")
 
         else:
             print("\nUnknown!!!\n")
 
-        if cur_query_end >= last_query_end:
-            last_line = cur_line
-
-    # new_actions = []
-    # last_i_t_action_index = None
-    # for action_index, action in enumerate(actions):
-    #     if action_index > 0 and actions[last_i_t_action_index][0] == "Insertion" and actions[action_index][0] == "Translocation":
-
-    #         if actions[last_i_t_action_index][3] >= actions[action_index][3]:  # Insertion bigger
-    #             print("Insertion bigger")
-
-    #         else:  # Translocation bigger
-    #             new_actions.append([
-    #                 "Translocation",
-    #                 actions[last_i_t_action_index][1],
-    #                 actions[last_i_t_action_index][2] + actions[last_i_t_action_index][3],
-    #                 actions[last_i_t_action_index][3]
-    #             ])
-    #             new_actions.append([
-    #                 "Translocation",
-    #                 actions[action_index][1],
-    #                 actions[action_index][2] - actions[last_i_t_action_index][3],
-    #                 actions[action_index][3] - actions[last_i_t_action_index][3]
-    #             ])
-    #     else:
-    #         new_actions.append(action)
-
-    #     if action[0] in ("Insertion", "Translocation"):
-    #         last_i_t_action_index = action_index
-
-    # print()
-    # print("\nlarge_actions:", actions)
-    # print("\nnew_actions:", new_actions)
-
-    # new_actions = [action for action in new_actions if action[3] >= settings["min_event_size"]]
-    # new_actions.sort(key=lambda action: -action[3])
+        if cur.end_x >= last.end_x:
+            last = cur
 
     large_actions = [action for action in actions if action[3] >= settings["min_event_size"]]
     large_actions.sort(key=lambda action: -action[3])
 
-    # print(actions)
+    print("\nactions:", actions)
     print("\nlarge_actions:", large_actions)
-    # print("\nnew_actions:", new_actions)
     # print()
-
-    # large_actions = new_actions
 
     # return
 # ====================================================================================================================================================================
@@ -428,10 +394,12 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     print("Plotting dots and lines...")
 
     for line in lines:
-        plot.line(*line[0:4], color="#fa0")
+        plot.plotLine(line, color="#fa0")
+        # plot.line(*line.coords, color="#fa0")
 
     for line in rotated_lines:
-        plot.line(*line[0:4], color="#000")
+        plot.plotLine(line, color="#000")
+        # plot.line(*line.coords, color="#000")
 
     dots = []  # Optional compress
     for x in range(0, len(graph), settings["dot_skip_rate"]):
@@ -467,7 +435,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
             if action[0] == "Rotation":
                 print("Rotation from {} (Query) to {} (Query)\n".format(
-                    prtNum(int(lines[action[1]][0])), prtNum(int(lines[action[2]][2]))
+                    prtNum(int(lines[action[1]].start_x)), prtNum(int(lines[action[2]].end_x))
                 ), file=history_file)
 
             elif action[0] == "Insertion":
@@ -503,8 +471,8 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             rotation_start, rotation_end, rotation_center = start_query_pos, start_ref_pos, length
 
             for i in range(rotation_start, rotation_end + 1):
-                for j in range(len(lines[i][4])):
-                    lines[i][4][j][1] = lines[i][4][j][1] - (lines[i][4][j][1] - rotation_center) * 2
+                for j in range(len(lines[i].dots)):
+                    lines[i].dots[j][1] = lines[i].dots[j][1] - (lines[i].dots[j][1] - rotation_center) * 2
 
             # for i in range(len(dots)):
             #     if start_query_pos <= dots[i][0] <= start_query_pos + length:
@@ -513,13 +481,13 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         elif action_type == "Insertion":
             for line in rotated_lines:
                 new_dots = []
-                for dot_x, dot_y in line[4]:
+                for dot_x, dot_y in line.dots:
                     if dot_x > start_query_pos:
                         dot_y -= length
                     if dot_x != start_query_pos:
                         new_dots.append([dot_x, dot_y])
 
-                line[4] = new_dots
+                line.dots = new_dots
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
@@ -527,9 +495,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         elif action_type == "Deletion":
             for line in rotated_lines:
-                for i in range(len(line[4])):
-                    if line[4][i][0] >= start_query_pos + length:
-                        line[4][i][0] -= length
+                for i in range(len(line.dots)):
+                    if line.dots[i][0] >= start_query_pos + length:
+                        line.dots[i][0] -= length
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos + length:
@@ -547,9 +515,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             rotated_lines[line_index][4] = new_dots
 
             for line in rotated_lines:
-                for i in range(len(line[4])):
-                    if line[4][i][0] >= start_query_pos:
-                        line[4][i][1] -= height
+                for i in range(len(line.dots)):
+                    if line.dots[i][0] >= start_query_pos:
+                        line.dots[i][1] -= height
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
@@ -558,13 +526,13 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         elif action_type == "Translocation":
             for line in rotated_lines:
                 new_dots = []
-                for dot_x, dot_y in line[4]:
+                for dot_x, dot_y in line.dots:
                     if dot_x > start_query_pos:
                         dot_y += length
                     if dot_x != start_query_pos:
                         new_dots.append([dot_x, dot_y])
 
-                line[4] = new_dots
+                line.dots = new_dots
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
@@ -579,24 +547,24 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         if action[0] in ("Pass", "Rotation"):
             # plot.scatter(dots, dotsize=settings["dotsize"], color="#00f")
             for line in lines:
-                plot.scatter(line[4], dotsize=settings["dotsize"], color="#00f")
+                plot.scatter(line.dots, dotsize=settings["dotsize"], color="#00f")
         else:
             # Adjusting axes (bottom):
             bottom = INT_MAX
             for line in rotated_lines:
-                for dot_x, dot_y in line[4]:
+                for dot_x, dot_y in line.dots:
                     bottom = min(bottom, dot_y)
 
             for line in rotated_lines:
-                for i in range(len(line[4])):
-                    line[4][i][1] -= bottom
+                for i in range(len(line.dots)):
+                    line.dots[i][1] -= bottom
 
             for i in range(action_index + 1, len(large_actions)):
                 if large_actions[i][1] >= start_query_pos:
                     large_actions[i][2] -= bottom
 
             for line in rotated_lines:
-                plot.scatter(line[4], dotsize=settings["dotsize"], color="#00f")
+                plot.scatter(line.dots, dotsize=settings["dotsize"], color="#00f")
 
         print("Saving large action #{}{}...\n".format(action_index, "" if action[0] == "Pass" else " (" + action[0] + ")"))
         plot.tight()
