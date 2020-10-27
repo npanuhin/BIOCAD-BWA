@@ -2,9 +2,9 @@
 
 > This repository is not intended to represent work, but rather to store and transmit data.
 
-For `SAM` and `pairwise` files *word wrap* should be disabled
-
 ## Analysis status
+
+<h3 align="center"><a href="https://github.com/npanuhin/BIOCAD_BWA/blob/master/tests/README.md">View current test results</a></h3>
 
 ✅ - Works as intended
 ⚠ - There are problems, but the solution is possible
@@ -26,18 +26,20 @@ For `SAM` and `pairwise` files *word wrap* should be disabled
 
 1. **BWA** indexes two `fasta` sequences
 2. **BWA** aligns these two sequences
-3. **samtools** converts `sam` file to `bam` file (*currently optional*)
-4. **samtools** sorts `bam` file (*currently optional*)
-5. **sam2pairwise** converts `sam` file to *pairwise* (`txt` file) (*currently optional*)
+3. **samtools** converts `sam` file to `bam` file (*currently disabled*)
+4. **samtools** sorts `bam` file (*currently disabled*)
+5. **sam2pairwise** converts `sam` file to *pairwise* (`txt` file) (*currently disabled*)
+
+> For `SAM` and `pairwise` files *word wrap* should be disabled
 
 
-#### Where to download software?
+#### Download software:
 
 - **BWA**: http://bio-bwa.sourceforge.net
 - **Samtools**: https://www.htslib.org
 - **sam2pairwise**: https://github.com/mlafave/sam2pairwise
 
-`sudo apt install bwa samtools`
+Or run `sudo apt install bwa samtools`
 
 
 ## Contents
