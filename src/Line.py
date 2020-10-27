@@ -19,3 +19,19 @@ class Line:
     @property
     def coords(self):
         return self.start_x, self.start_y, self.end_x, self.end_y
+
+    # @property
+    # def x1(self):
+    #     return self.start_x
+
+    # @property
+    # def y1(self):
+    #     return self.start_y
+
+    # @property
+    # def x2(self):
+    #     return self.end_x
+
+    # @property
+    # def y2(self):
+    #     return self.end_y

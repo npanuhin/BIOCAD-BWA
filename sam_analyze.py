@@ -10,6 +10,7 @@ from utils import mkpath, prtNum, distance2, linearApprox, YCoordOnLine, setSett
 
 from Line import Line
 from Plot import Plot
+from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pass
 
 INT_MAX = int(1e9) + 7
 
@@ -56,11 +57,11 @@ with open(mkpath("src", "CIGAR_FLAGS.json"), 'r', encoding="utf-8") as file:
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large3/large_genome1.fasta"
-ref_genome_path = "samples/large3/large_genome2.fasta"
-sam_file_path = "BWA/large3/bwa_output.sam"
+query_genome_path = "samples/large6/large_genome1.fasta"
+ref_genome_path = "samples/large6/large_genome2.fasta"
+sam_file_path = "BWA/large6/bwa_output.sam"
 show_plot = True
-output_folder = "tests/large3"
+output_folder = "tests/large6"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/duplication.fasta"
@@ -230,7 +231,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     def rotateLines(lines):
         # print("Rotation:")
-        rotation_center, rotation_actions = [None] * len(lines), []
+        rotation_center, cur_actions = [None] * len(lines), []
         rotation_start = [(i if lines[i].end_y < lines[i].start_y else None) for i in range(len(lines))]
 
         # print(*[line.coords for line in lines], sep='\n')
@@ -249,7 +250,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
                 last_rotation = line_index
 
-        # Counting rotation_center and rotation_actions
+        # Counting rotation_center and cur_actions
         line_index = len(lines) - 1
         while line_index >= 0:
             if rotation_start[line_index] is None:
@@ -266,17 +267,17 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                 rotation_center[i] = (min_value + max_value) // 2
 
             if lines[line_index].end_x - lines[rotation_start[line_index]].start_x >= settings["min_event_size"]:
-                rotation_actions.append(["Rotation", rotation_start[line_index], line_index, rotation_center[line_index]])
+                cur_actions.append(Rotation(rotation_start[line_index], line_index, rotation_center[line_index]))
 
             # plot.hline(rotation_center[i], color='#ff0', linestyle='-')
 
             line_index = rotation_start[line_index] - 1
 
-        rotation_actions.sort(key=lambda action: (action[1], action[2]))
+        cur_actions.sort(key=lambda rotation: (rotation.start_line, rotation.end_line))
 
         # print("rotation_start:", rotation_start)
         # print("rotation_center:", rotation_center)
-        # print("rotation_actions:", rotation_actions)
+        # print("cur_actions:", cur_actions)
 
         for i in range(len(lines)):
             if rotation_center[i] is not None:
@@ -287,7 +288,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                 for j in range(len(line.dots)):
                     line.dots[j][1] -= (line.dots[j][1] - rotation_center[i]) * 2
 
-        return rotation_actions
+        return cur_actions
 
     rotated_lines, rotation_actions = deepcopy(lines), []
 
@@ -302,7 +303,8 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     else:
         exit("Endless loop!!!")
 
-    print([line.coords for line in lines])
+    print("Rotations:", *rotation_actions, sep='\n')
+    # print("Rotation lines:", *[line.coords for line in rotated_lines], sep='\n')
 
     # return
 # ====================================================================================================================================================================
@@ -319,10 +321,10 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             insertion_length = cur.start_y - last.end_y
             deletion_length = cur.start_x - last.end_x
 
-            actions.append(["Insertion", last.end_x, last.end_y, insertion_length])
+            actions.append(Insertion(last.end_x, last.end_y, insertion_length))
             plot.line(last.end_x, last.end_y, last.end_x, cur.start_y, color="#0f0")
 
-            actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
+            actions.append(Deletion(last.end_x, last.end_y, deletion_length))
             plot.line(last.end_x, cur.start_y, cur.start_x, cur.start_y, color="#f00")
 
         elif cur.start_x < last.end_x and cur.start_y >= last.end_y:  # top left
@@ -331,10 +333,10 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             duplication_length = last.end_x - cur.start_x
             duplication_height = last.end_y - tmp_dot_y
 
-            actions.append(["Insertion", cur.start_x, last.end_y, insertion_length])
+            actions.append(Insertion(cur.start_x, last.end_y, insertion_length))
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0f0")
 
-            actions.append(["Duplication", cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1])
+            actions.append(Duplication(cur.start_x, tmp_dot_y, duplication_length, duplication_height, line_index - 1))
             plot.poligon([
                 (cur.start_x, tmp_dot_y),
                 (cur.start_x, last.end_y),
@@ -345,10 +347,10 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             deletion_length = cur.start_x - last.end_x
             translocation_length = last.end_y - cur.start_y
 
-            actions.append(["Deletion", last.end_x, last.end_y, deletion_length])
+            actions.append(Deletion(last.end_x, last.end_y, deletion_length))
             plot.line(last.end_x, last.end_y, cur.start_x, last.end_y, color="#f00")
 
-            actions.append(["Translocation", last.end_x, last.end_y, translocation_length])
+            actions.append(Translocation(last.end_x, last.end_y, translocation_length))
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0ff")
 
         else:
@@ -357,12 +359,12 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         if cur.end_x >= last.end_x:
             last = cur
 
-    large_actions = [action for action in actions if action[3] >= settings["min_event_size"]]
-    large_actions.sort(key=lambda action: -action[3])
+    large_actions = [action for action in actions if action.size >= settings["min_event_size"]]
+    large_actions.sort(key=lambda action: -action.size)
 
-    print("\nactions:", actions)
-    print("\nlarge_actions:", large_actions)
-    # print()
+    print("\nActions:", *actions, sep='\n')
+    print("\nLarge_actions:", *large_actions, sep='\n')
+    print()
 
     # return
 # ====================================================================================================================================================================
@@ -402,123 +404,127 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     for filename in os.listdir(mkpath(output_folder, "history")):
         os.remove(mkpath(output_folder, "history", filename))
 
-    large_actions = [["Pass", 0, 0, 0]] + rotation_actions + large_actions
+    large_actions = [Pass()] + rotation_actions + large_actions
 
     with open(mkpath(output_folder, "history.txt"), 'w', encoding="utf-8") as history_file:
         for action in large_actions:
 
-            if action[0] == "Rotation":
+            if isinstance(action, Rotation):
                 print("Rotation from {} (Query) to {} (Query)\n".format(
-                    prtNum(int(lines[action[1]].start_x)), prtNum(int(lines[action[2]].end_x))
+                    prtNum(int(lines[action.start_line].start_x)),
+                    prtNum(int(lines[action.end_line].end_x))
                 ), file=history_file)
 
-            elif action[0] == "Insertion":
-                print("Insertion of {}-{} (Ref) to {} (Query)\n".format(
-                    prtNum(int(action[2])), prtNum(int(action[2] + action[3])), prtNum(int(action[1]))
-                ), file=history_file)
-
-            elif action[0] == "Deletion":
+            elif isinstance(action, Deletion):
                 print("Deletion of {}-{} (Query) from {} (Ref)\n".format(
-                    prtNum(int(action[1])), prtNum(int(action[1] + action[3])), prtNum(int(action[2]))
+                    prtNum(int(action.start_x)),
+                    prtNum(int(action.start_x + action.length)),
+                    prtNum(int(action.start_y))
                 ), file=history_file)
 
-            elif action[0] == "Duplication":
-                print("Duplication of {}-{} (Query) {}-{} (Ref)\n".format(
-                    prtNum(int(action[1])), prtNum(int(action[1] + action[3])), prtNum(int(action[2])), prtNum(int(action[2] + action[4]))
+            elif isinstance(action, Insertion):
+                print("Insertion of {}-{} (Ref) to {} (Query)\n".format(
+                    prtNum(int(action.start_y)),
+                    prtNum(int(action.start_y + action.height)),
+                    prtNum(int(action.start_x))
                 ), file=history_file)
 
-            elif action[0] == "Translocation":
+            elif isinstance(action, Translocation):
                 print("Translocation of {}-END (Query) from {} (Ref) to {} (Ref)\n".format(
-                    prtNum(int(action[1])), prtNum(int(action[2] - action[3])), prtNum(int(action[2]))
+                    prtNum(int(action.start_x)),
+                    prtNum(int(action.start_y - action.height)),
+                    prtNum(int(action.start_y))
+                ), file=history_file)
+
+            elif isinstance(action, Duplication):
+                print("Duplication of {}-{} (Query) {}-{} (Ref)\n".format(
+                    prtNum(int(action.start_x)),
+                    prtNum(int(action.start_x + action.length)),
+                    prtNum(int(action.start_y)),
+                    prtNum(int(action.start_y + action.height))
                 ), file=history_file)
 
     print(" {} images\n".format(len(large_actions)))
 
-    print(rotation_actions)
-    print(large_actions)
+    # print("Large actions:", *large_actions, sep='\n')
 
     for action_index, action in enumerate(large_actions):
-        action_type, start_query_pos, start_ref_pos, length = action[0:4]
 
-        if action_type == "Rotation":
+        if isinstance(action, Rotation):
 
-            rotation_start, rotation_end, rotation_center = start_query_pos, start_ref_pos, length
-
-            for i in range(rotation_start, rotation_end + 1):
+            for i in range(action.start_line, action.end_line + 1):
                 for j in range(len(lines[i].dots)):
-                    lines[i].dots[j][1] = lines[i].dots[j][1] - (lines[i].dots[j][1] - rotation_center) * 2
+                    lines[i].dots[j][1] = lines[i].dots[j][1] - (lines[i].dots[j][1] - action.rotation_center) * 2
 
             # for i in range(len(dots)):
             #     if start_query_pos <= dots[i][0] <= start_query_pos + length:
-            #         dots[i][1] = dots[i][1] - (dots[i][1] - rotation_center) * 2
+            #         dots[i][1] = dots[i][1] - (dots[i][1] - action.rotation_center) * 2
 
-        elif action_type == "Insertion":
+        elif isinstance(action, Insertion):
             for line in rotated_lines:
                 new_dots = []
                 for dot_x, dot_y in line.dots:
-                    if dot_x > start_query_pos:
-                        dot_y -= length
-                    if dot_x != start_query_pos:
+                    if dot_x > action.start_x:
+                        dot_y -= action.height
+                    if dot_x != action.start_x:
                         new_dots.append([dot_x, dot_y])
 
                 line.dots = new_dots
 
             for i in range(action_index + 1, len(large_actions)):
-                if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] -= length
+                if large_actions[i].start_x >= action.start_x:
+                    large_actions[i].start_y -= action.height
 
-        elif action_type == "Deletion":
+        elif isinstance(action, Deletion):
             for line in rotated_lines:
                 for i in range(len(line.dots)):
-                    if line.dots[i][0] >= start_query_pos + length:
-                        line.dots[i][0] -= length
+                    if line.dots[i][0] >= action.start_x + action.length:
+                        line.dots[i][0] -= action.length
 
             for i in range(action_index + 1, len(large_actions)):
-                if large_actions[i][1] >= start_query_pos + length:
-                    large_actions[i][1] -= length
+                if large_actions[i].start_x >= action.start_x + action.length:
+                    large_actions[i].start_x -= action.length
 
-        elif action_type == "Duplication":
-            height, line_index = action[4], action[5]
-
+        elif isinstance(action, Duplication):
             new_dots = []
-            for dot in rotated_lines[line_index][4]:
-                if start_query_pos <= dot[0] <= start_query_pos + length:
+            for dot in rotated_lines[action.line_index][4]:
+                if action.start_x <= dot[0] <= action.start_x + action.length:
                     pass
                 else:
                     new_dots.append(dot)
-            rotated_lines[line_index][4] = new_dots
+            rotated_lines[action.line_index][4] = new_dots
 
             for line in rotated_lines:
                 for i in range(len(line.dots)):
-                    if line.dots[i][0] >= start_query_pos:
-                        line.dots[i][1] -= height
+                    if line.dots[i][0] >= action.start_x:
+                        line.dots[i][1] -= action.height
 
             for i in range(action_index + 1, len(large_actions)):
-                if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] -= height
+                if large_actions[i].start_x >= action.start_x:
+                    large_actions[i].start_y -= action.height
 
-        elif action_type == "Translocation":
+        elif isinstance(action, Translocation):
             for line in rotated_lines:
                 new_dots = []
                 for dot_x, dot_y in line.dots:
-                    if dot_x > start_query_pos:
-                        dot_y += length
-                    if dot_x != start_query_pos:
+                    if dot_x > action.start_x:
+                        dot_y += action.height
+                    if dot_x != action.start_x:
                         new_dots.append([dot_x, dot_y])
 
                 line.dots = new_dots
 
             for i in range(action_index + 1, len(large_actions)):
-                if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] += length
+                if large_actions[i].start_x >= action.start_x:
+                    large_actions[i].start_y += action.height
 
-        elif action[0] == "Pass":
+        elif isinstance(action, Pass):
             pass
 
         else:
             raise ValueError("Unknown action type")
 
-        if action[0] in ("Pass", "Rotation"):
+        if isinstance(action, (Pass, Rotation)):
             # plot.scatter(dots, dotsize=settings["dotsize"], color="#00f")
             for line in lines:
                 plot.scatter(line.dots, dotsize=settings["dotsize"], color="#00f")
@@ -534,20 +540,21 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                     line.dots[i][1] -= bottom
 
             for i in range(action_index + 1, len(large_actions)):
-                if large_actions[i][1] >= start_query_pos:
-                    large_actions[i][2] -= bottom
+                if hasattr(large_actions[i], "start_x") and hasattr(large_actions[i], "start_y") and \
+                        large_actions[i].start_x >= action.start_x:
+                    large_actions[i].start_y += bottom
 
             for line in rotated_lines:
                 plot.scatter(line.dots, dotsize=settings["dotsize"], color="#00f")
 
-        print("Saving large action #{}{}...\n".format(action_index, "" if action[0] == "Pass" else " (" + action[0] + ")"))
+        print("Saving large action #{}{}...\n".format(action_index, "" if isinstance(action, Pass) else " ({})".format(action.type)))
         plot.tight()
         plot.save(mkpath(
             output_folder,
             "history",
             "{}{}.png".format(
                 str(action_index).zfill(3),
-                "" if action[0] == "Pass" else " (" + action[0] + ")"
+                "" if isinstance(action, Pass) else " ({})".format(action.type)
             )
         ))
         plot.clear()
