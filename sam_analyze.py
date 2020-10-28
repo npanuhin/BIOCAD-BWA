@@ -273,7 +273,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
             line_index = rotation_start[line_index] - 1
 
-        cur_actions.sort(key=lambda rotation: (rotation.start_line, rotation.end_line))
+        # cur_actions.sort(key=lambda rotation: (rotation.start_line, rotation.end_line))  # TODO: need this?
 
         # print("rotation_start:", rotation_start)
         # print("rotation_center:", rotation_center)
@@ -301,7 +301,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             break
 
     else:
-        exit("Endless loop!!!")
+        raise "Rotations: Endless loop!"
 
     print("Rotations:", *rotation_actions, sep='\n')
     # print("Rotation lines:", *[line.coords for line in rotated_lines], sep='\n')
@@ -329,7 +329,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         elif cur.start_x < last.end_x and cur.start_y >= last.end_y:  # top left
             tmp_dot_y = YCoordOnLine(*last.coords, cur.start_x)
-            insertion_length = cur.start_y - cur.end_y
+            insertion_length = cur.start_y - last.end_y
             duplication_length = last.end_x - cur.start_x
             duplication_height = last.end_y - tmp_dot_y
 
@@ -487,12 +487,10 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         elif isinstance(action, Duplication):
             new_dots = []
-            for dot in rotated_lines[action.line_index][4]:
-                if action.start_x <= dot[0] <= action.start_x + action.length:
-                    pass
-                else:
+            for dot in rotated_lines[action.line_index].dots:
+                if not (action.start_x <= dot[0] <= action.start_x + action.length):
                     new_dots.append(dot)
-            rotated_lines[action.line_index][4] = new_dots
+            rotated_lines[action.line_index].dots = new_dots
 
             for line in rotated_lines:
                 for i in range(len(line.dots)):
@@ -522,7 +520,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             pass
 
         else:
-            raise ValueError("Unknown action type")
+            raise ValueError("History: Unknown action type")
 
         if isinstance(action, (Pass, Rotation)):
             # plot.scatter(dots, dotsize=settings["dotsize"], color="#00f")

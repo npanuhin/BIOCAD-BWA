@@ -11,9 +11,9 @@ class Plot:
 
         self.legend = None
 
-        # self.fig.rc("font", size=fontsize)               # controls default text sizes
-        # self.fig.rc("axes", titlesize=fontsize)          # fontsize of the axes title
-        # self.ax.rc("axes", labelsize=8)                  # fontsize of the x and y labels
+        # self.fig.rc("font", size=fontsize)              # controls default text sizes
+        # self.fig.rc("axes", titlesize=fontsize)         # fontsize of the axes title
+        # self.ax.rc("axes", labelsize=8)                 # fontsize of the x and y labels
         # self.ax.rc("xtick", labelsize=fontsize)         # fontsize of the tick labels
         # self.ax.rc("ytick", labelsize=fontsize)         # fontsize of the tick labels
         # self.ax.rc("legend", fontsize=fontsize)         # legend fontsize
@@ -37,6 +37,7 @@ class Plot:
         # self.thread = None
 
     def __del__(self):
+        self.clear()
         self.close()
 
     def scatter(self, dots, dotsize=None, *args, **kwargs):
