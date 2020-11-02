@@ -1,0 +1,4 @@
+Query: Some query sequence
+Target: Some target sequence
+ACADG : 1, 50 ; 13, 45
+ADDGT : 20, 30 ; 2 
