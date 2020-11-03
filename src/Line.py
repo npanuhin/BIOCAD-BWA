@@ -16,6 +16,11 @@ class Line:
         self.end_y = end_y
         self.dots = dots
 
+    def __repr__(self):
+        return "Line(start_x={}, start_y={}, end_x={}, end_y={}, dots=[{}])".format(
+            self.start_x, self.start_y, self.end_x, self.end_y, len(self.dots)
+        )
+
     @property
     def coords(self):
         return self.start_x, self.start_y, self.end_x, self.end_y
@@ -35,3 +40,14 @@ class Line:
     # @property
     # def y2(self):
     #     return self.end_y
+
+    @property
+    def center_x(self):
+        return (self.start_x + self.end_x) // 2
+
+    @property
+    def center_y(self):
+        return (self.start_y + self.end_y) // 2
+
+    def isTiltedCorrectly(self):
+        return self.start_y <= self.end_y

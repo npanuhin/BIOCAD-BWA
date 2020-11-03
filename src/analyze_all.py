@@ -22,7 +22,6 @@ SETTINGS = {
     "figsize": (10, 7),
 
     "min_event_size": 3,
-    "rotations_join_size": 10,
     "lines_join_size": 5,
     "line_min_size": 10
 }
@@ -47,7 +46,6 @@ SETTINGS = {
     "figsize": (10, 7),
 
     "min_event_size": int(5e3),
-    "rotations_join_size": int(1e5),
     "lines_join_size": "$min_event_size + 3",
     "line_min_size": "$min_event_size"
 }

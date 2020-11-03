@@ -1,6 +1,6 @@
 # --------------------------------------------------------------------------------> Rotation
 class Rotation:
-    def __init__(self, start_line, end_line, rotation_center):
+    def __init__(self, start_line, end_line, rotation_center=None):
         self.type = "Rotation"
         self.start_line = start_line
         self.end_line = end_line
