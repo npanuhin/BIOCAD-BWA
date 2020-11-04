@@ -303,6 +303,19 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                 min_line_center = min(min_line_center, rotated_lines[line_index].center_y)
                 max_line_center = max(max_line_center, rotated_lines[line_index].center_y)
 
+            bad = False
+            for line_index in range(len(lines)):
+                if not (rotation.start_line <= line_index <= rotation.end_line) and \
+                        min_line_center < rotated_lines[line_index].center_y < max_line_center:
+                    bad = True
+            if bad:
+                continue
+
+            # HUGE TODO: WORKAROUND!!!
+            if rotated_lines[rotation.start_line].isTiltedCorrectly() or rotated_lines[rotation.end_line].isTiltedCorrectly():
+                continue
+
+            cur_metric = countMetricWithRotation(rotated_lines, rotation)
 
             if cur_metric < best_metric_value:
                 best_metric_value = cur_metric
