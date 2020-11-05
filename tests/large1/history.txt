@@ -1,6 +1,6 @@
-Rotation from 10 (Query) to 1'255'680 (Query)
+Rotation from 10 (Query) to 1'168'850 (Query)
 
-Translocation of 1'168'850-END (Query) from -68 (Ref) to 1'268'238 (Ref)
+Rotation from 1'168'860 (Query) to 1'255'680 (Query)
 
-Insertion of 466'637-477'494 (Ref) to 379'050 (Query)
+Insertion of 378'624-389'481 (Ref) to 379'050 (Query)
 

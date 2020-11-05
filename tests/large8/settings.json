@@ -1,0 +1,5 @@
+{
+	"min_event_size": 1.5e4, 
+	"lines_join_size": 1e4,
+	"main_line": [0, 80000, 1280000, 1400000]
+}

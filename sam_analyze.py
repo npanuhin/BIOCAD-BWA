@@ -302,7 +302,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     # print("\nPossible rotations:", *possible_rotations, sep='\n')
 
-    # plot.plotLine(main_line, color="#f80")
+    # plot.plotLine(main_line, color="#ff0")
     # for line in rotated_lines:
     #     plot.plotLine(line, color="#000")
     # plot.save(mkpath(output_folder, "history", "0.png"))
@@ -347,7 +347,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         rotation_actions.append(possible_rotations[best_rotation_index])
 
-        # plot.plotLine(main_line, color="#f80")
+        # plot.plotLine(main_line, color="#ff0")
         # for line in rotated_lines:
         #     plot.plotLine(line, color="#000")
         # plot.save(mkpath(output_folder, "history", "{}.png".format(index)))
@@ -424,7 +424,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     print("Plotting dots and lines...")
 
     if main_line is not None:
-        plot.plotLine(main_line, color="#f80")
+        plot.plotLine(main_line, color="#ff0")
 
     for line in lines:
         plot.plotLine(line, color="#fa0")

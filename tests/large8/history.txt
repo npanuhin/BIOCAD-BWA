@@ -1,66 +1,36 @@
-Rotation from 183'140 (Query) to 867'430 (Query)
+Rotation from 740'480 (Query) to 867'430 (Query)
 
-Rotation from 193'690 (Query) to 299'720 (Query)
+Rotation from 600'830 (Query) to 738'800 (Query)
 
-Rotation from 459'980 (Query) to 600'580 (Query)
+Rotation from 409'290 (Query) to 517'170 (Query)
 
 Rotation from 786'990 (Query) to 818'990 (Query)
 
-Rotation from 232'500 (Query) to 238'290 (Query)
+Rotation from 299'980 (Query) to 407'290 (Query)
 
-Rotation from 504'450 (Query) to 539'080 (Query)
+Rotation from 478'540 (Query) to 504'310 (Query)
 
 Translocation of 1'279'630-END (Query) from 20 (Ref) to 1'384'353 (Ref)
 
-Insertion of 249'769-978'331 (Ref) to 182'860 (Query)
+Translocation of 285'670-END (Query) from 296'969 (Ref) to 646'353 (Ref)
 
-Translocation of 600'580-END (Query) from 377'175 (Ref) to 784'137 (Ref)
+Insertion of 295'366-588'008 (Ref) to 229'460 (Query)
 
-Translocation of 191'440-END (Query) from 591'487 (Ref) to 986'629 (Ref)
+Insertion of 404'024-541'515 (Ref) to 407'290 (Query)
 
-Insertion of 378'323-706'938 (Ref) to 867'430 (Query)
+Insertion of 572'940-691'252 (Ref) to 441'230 (Query)
 
-Insertion of 627'210-918'188 (Ref) to 229'460 (Query)
+Translocation of 504'310-END (Query) from 573'413 (Ref) to 681'276 (Ref)
 
-Translocation of 407'290-END (Query) from 651'370 (Ref) to 940'533 (Ref)
+Translocation of 459'760-END (Query) from 613'347 (Ref) to 710'862 (Ref)
 
-Insertion of 713'108-999'594 (Ref) to 873'630 (Query)
+Insertion of 586'133-651'982 (Ref) to 517'170 (Query)
 
-Translocation of 738'800-END (Query) from 250'872 (Ref) to 523'913 (Ref)
+Insertion of 594'233-652'233 (Ref) to 477'170 (Query)
 
-Translocation of 459'760-END (Query) from 592'051 (Ref) to 820'717 (Ref)
+Deletion of 517'170-545'790 (Query) from 586'133 (Ref)
 
-Insertion of 558'817-729'732 (Ref) to 545'770 (Query)
+Deletion of 1'113'040-1'131'130 (Query) from 1'228'964 (Ref)
 
-Translocation of 285'670-END (Query) from 833'954 (Ref) to 977'350 (Ref)
-
-Insertion of 682'795-801'107 (Ref) to 441'230 (Query)
-
-Translocation of 477'170-END (Query) from 531'114 (Ref) to 611'165 (Ref)
-
-Translocation of 539'080-END (Query) from 552'274 (Ref) to 631'983 (Ref)
-
-Insertion of 552'173-613'148 (Ref) to 504'310 (Query)
-
-Deletion of 69'920-89'850 (Query) from 158'058 (Ref)
-
-Deletion of 1'113'040-1'131'130 (Query) from 1'230'644 (Ref)
-
-Deletion of 752'240-769'850 (Query) from 262'577 (Ref)
-
-Deletion of 517'170-532'610 (Query) from 625'868 (Ref)
-
-Translocation of 299'720-END (Query) from 833'478 (Ref) to 845'584 (Ref)
-
-Insertion of 339'054-350'419 (Ref) to 838'010 (Query)
-
-Deletion of 1'056'120-1'064'160 (Query) from 1'173'298 (Ref)
-
-Insertion of 1'184'946-1'192'153 (Ref) to 1'074'200 (Query)
-
-Insertion of 1'230'644-1'237'030 (Ref) to 1'113'040 (Query)
-
-Deletion of 477'170-483'270 (Query) from 611'165 (Ref)
-
-Insertion of 281'368-287'443 (Ref) to 786'920 (Query)
+Deletion of 752'240-769'850 (Query) from 870'884 (Ref)
 
