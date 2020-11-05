@@ -27,3 +27,29 @@ printf "Aligned (.sam)\n\n"
 printf "Process time: $(( $(date +%s) - START_TIME ))s\n"
 
 # sam2pairwise < bwa_output.sam > bwa_output_pairwise.txt
+
+printf "Cleaning up...\n\n"
+
+declare -a redundant_files=("bwa_genome1.fasta.amb"
+			                "bwa_genome1.fasta.ann"
+			                "bwa_genome1.fasta.bwt"
+			                "bwa_genome1.fasta.pac"
+			                "bwa_genome1.fasta.sa"
+
+			                "bwa_genome2.fasta.amb"
+			                "bwa_genome2.fasta.ann"
+			                "bwa_genome2.fasta.bwt"
+			                "bwa_genome2.fasta.pac"
+			                "bwa_genome2.fasta.sa"
+
+			                "bwa_genome1.fasta"
+			                "bwa_genome2.fasta"
+			                )
+
+for file in "${redundant_files[@]}"
+do
+	if [[ -e "$file" ]]
+	then
+		rm -f "$file"
+	fi
+done
