@@ -54,7 +54,7 @@ for foldername in os.listdir("tests"):
     if not os.path.isdir(mkpath("tests", foldername)) or foldername.strip("/").strip("\\") == "small":
         continue
 
-    # if foldername.strip("/").strip("\\") != "large6":
+    # if foldername.strip("/").strip("\\") != "large06":
     #     continue
 
     sam_analyze.analyze(

@@ -16,7 +16,7 @@ from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pa
 
 # TODO:
 # - Left bottom
-# - (large7 - left side) - display all dots
+# - (large07 - left side) - display all dots
 
 
 # !!! X - query, Y - ref !!!
@@ -55,11 +55,11 @@ with open(mkpath("src", "CIGAR_FLAGS.json"), 'r', encoding="utf-8") as file:
 
 # /-----TESTING SETTINGS-----\ #
 
-query_genome_path = "samples/large2/large_genome1.fasta"
-ref_genome_path = "samples/large2/large_genome2.fasta"
-sam_file_path = "BWA/large2/bwa_output.sam"
+query_genome_path = "samples/large02/large_genome1.fasta"
+ref_genome_path = "samples/large02/large_genome2.fasta"
+sam_file_path = "BWA/large02/bwa_output.sam"
 show_plot = True
-output_folder = "tests/large2"
+output_folder = "tests/large02"
 
 # query_genome_path = "samples/small/source.fasta"
 # ref_genome_path = "samples/small/duplication.fasta"
