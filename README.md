@@ -15,10 +15,13 @@
 - ✅ large03
 - ✅ large04
 - ✅ large05
-- ❌ large06
+- ✅ large06
 - ✅ large07
-- 🔜 large08
-- 🔜 large09
+- ⚠ large08
+- ✅ large09 (⚠)
+- 🔜 large10
+- 🔜 large11
+- 🔜 large12
 - ✅ small (BWA⚠)
 
 
