@@ -227,10 +227,20 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     # Rotations
     print("Counting rotations...")
 
+    if "main_line" in settings:
+        main_line = Line(*settings["main_line"])
+    else:
+        main_line = None
+
     def countMetric(lines):
         result = 0
-        for line in lines:
-            result += abs(line.start_x - line.start_y) ** 2 + abs(line.end_x - line.end_y) ** 2
+        if main_line is None:
+            for line in lines:
+                result += abs(line.start_x - line.start_y) ** 2 + abs(line.end_x - line.end_y) ** 2
+        else:
+            for line in lines:
+                result += abs(line.start_y - YCoordOnLine(*main_line.coords, line.start_x))
+                result += abs(line.end_y - YCoordOnLine(*main_line.coords, line.end_x))
         return result
 
     def countMetricWithRotation(lines, rotation, apply_changes=False):
@@ -292,6 +302,13 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     # print("\nPossible rotations:", *possible_rotations, sep='\n')
 
+    # plot.plotLine(main_line, color="#f80")
+    # for line in rotated_lines:
+    #     plot.plotLine(line, color="#000")
+    # plot.save(mkpath(output_folder, "history", "0.png"))
+    # plot.clear()
+    # index = 1
+
     while True:
         best_metric_value = float('inf')
         best_rotation_index = 0
@@ -329,6 +346,14 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         cur_metric_value = countMetricWithRotation(rotated_lines, possible_rotations[best_rotation_index], apply_changes=True)
 
         rotation_actions.append(possible_rotations[best_rotation_index])
+
+        # plot.plotLine(main_line, color="#f80")
+        # for line in rotated_lines:
+        #     plot.plotLine(line, color="#000")
+        # plot.save(mkpath(output_folder, "history", "{}.png".format(index)))
+        # plot.clear()
+        # index += 1
+        # input()
 
     print("\nRotation actions:", *rotation_actions, sep='\n')
     print("\nRotated lines:", *rotated_lines, sep='\n')
@@ -397,6 +422,9 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 # ====================================================================================================================================================================
     # Plotting dots and lines
     print("Plotting dots and lines...")
+
+    if main_line is not None:
+        plot.plotLine(main_line, color="#f80")
 
     for line in lines:
         plot.plotLine(line, color="#fa0")

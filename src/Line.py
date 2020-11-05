@@ -51,3 +51,11 @@ class Line:
 
     def isTiltedCorrectly(self):
         return self.start_y <= self.end_y
+
+    @property
+    def k(self):
+        return (self.end_y - self.start_y) / (self.end_x - self.start_x)
+
+    @property
+    def b(self):
+        return self.end_y - self.end_x * self.k
