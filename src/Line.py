@@ -62,3 +62,12 @@ class Line:
 
     def copyCoords(self):
         return Line(self.start_x, self.start_y, self.end_x, self.end_y, dots=[])
+
+    def shift(self, dx=0, dy=0):
+        self.start_x += dx
+        self.start_y += dy
+        self.end_x += dx
+        self.end_y += dy
+        for i in range(len(self.dots)):
+            self.dots[i][0] += dx
+            self.dots[i][1] += dy

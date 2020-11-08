@@ -1,6 +1,4 @@
-Rotation from 374'560 (Query) to 1'314'260 (Query)
+Rotation from 367'220 (Query) to 1'306'920 (Query)
 
-Translocation of 7'330-END (Query) from -565 (Ref) to 1'926'288 (Ref)
-
-Deletion of 1'602'830-1'804'930 (Query) from 1'600'209 (Ref)
+Deletion of 1'595'490-1'797'590 (Query) from 1'600'209 (Ref)
 

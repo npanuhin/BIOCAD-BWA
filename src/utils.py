@@ -21,7 +21,7 @@ def distance2(x1, y1, x2, y2):
     return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
 
-def linearApprox(dots):
+def linearApproxDots(dots):
     n, sumx, sumy, sumx2, sumxy = len(dots), 0, 0, 0, 0
     for x, y in dots:
         sumx += x
@@ -32,6 +32,13 @@ def linearApprox(dots):
     k = (n * sumxy - (sumx * sumy)) / (n * sumx2 - sumx * sumx)
     b = (sumy - k * sumx) / n
     return k, b
+
+
+def linearApproxLines(lines):
+    dots = []
+    for line in lines:
+        dots += line.dots
+    return linearApproxDots(dots)
 
 
 def YCoordOnLine(x1, y1, x2, y2, target_x):

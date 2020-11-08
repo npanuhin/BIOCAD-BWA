@@ -11,14 +11,14 @@
 ❌ - There are problems that make the solution wrong
 
 - ✅ large01
-- ✅ large02
-- ✅ large03
-- ✅ large04
+- 🔜 large02
+- 🔜 large03
+- 🔜 large04
 - ✅ large05
-- ✅ large06
+- 🔜 large06
 - ✅ large07
-- ⚠ large08
-- ✅ large09 (⚠)
+- 🔜 large08
+- ⚠ large09
 - 🔜 large10
 - 🔜 large11
 - 🔜 large12
