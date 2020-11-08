@@ -44,11 +44,11 @@ class Plot:
         self.ax.scatter(*zip(*dots), s=dotsize, *args, **kwargs)
         # self.ax.plot(*zip(*dots), color='none')  # Walkaround for relim() to work
 
-    def line(self, x1, y1, x2, y2, *args, **kwargs):
-        self.ax.plot([x1, x2], [y1, y2], *args, **kwargs)
+    def line(self, x1, y1, x2, y2, color="#000", *args, **kwargs):
+        self.ax.plot((x1, x2), (y1, y2), color=color, *args, **kwargs)
 
-    def plotLine(self, _line, *args, **kwargs):
-        self.ax.plot((_line.start_x, _line.end_x), (_line.start_y, _line.end_y), *args, **kwargs)
+    def plotLine(self, _line, color="#000", *args, **kwargs):
+        self.ax.plot((_line.start_x, _line.end_x), (_line.start_y, _line.end_y), color=color, *args, **kwargs)
 
     def legendLine(self, legend_dict, fontsize=None, *line_args, **line_kwargs):
         legend_objects, legend_names = [], []

@@ -16,7 +16,6 @@ from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pa
 
 # TODO:
 # - Left bottom
-# - (large07 - left side) - display all dots
 
 
 # !!! X - query, Y - ref !!!
@@ -406,7 +405,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0ff")
 
         else:
-            print("\nUnknown!!!\n")
+            print("\nUnknown action!!!\n")
 
         if cur.end_x >= last.end_x:
             last = cur
@@ -430,7 +429,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         plot.plotLine(line, color="#fa0")
 
     for line in rotated_lines:
-        plot.plotLine(line, color="#000")
+        plot.plotLine(line)
 
     dots = []  # Optional compress
     for x in range(0, len(graph), settings["dot_skip_rate"]):

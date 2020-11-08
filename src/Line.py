@@ -59,3 +59,6 @@ class Line:
     @property
     def b(self):
         return self.end_y - self.end_x * self.k
+
+    def copyCoords(self):
+        return Line(self.start_x, self.start_y, self.end_x, self.end_y, dots=[])
