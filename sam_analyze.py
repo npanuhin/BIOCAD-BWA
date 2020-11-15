@@ -1,3 +1,4 @@
+from typing import List
 from string import ascii_uppercase
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from json import load as json_load  # , dump as json_dump
@@ -221,94 +222,32 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     lines.sort(key=lambda line: (line.start_x, line.start_y))
 
     print(" {} lines".format(len(lines)))
-    print(*lines, sep='\n')
-
-    # return
-# ====================================================================================================================================================================
-    # Shift
-    print("Counting shift...")
-
-    def countShiftMetric(lines):
-        k, b = linearApproxLines(lines)
-        main_line = Line(0, b, query_genome_length, query_genome_length * k + b)
-
-        result = 0
-        for line in lines:
-            result += abs(line.start_y - YCoordOnLine(*main_line.coords, line.start_x))
-            result += abs(line.end_y - YCoordOnLine(*main_line.coords, line.end_x))
-        return result
-
-    def countShift(lines, start_line, apply_shift=False):
-
-        d_x = lines[start_line].start_x
-
-        # print("d_x = {}".format(d_x))
-
-        for line_index in range(start_line, len(lines)):
-            lines[line_index].shift(dx=-d_x)
-
-        for line_index in range(0, start_line):
-            lines[line_index].shift(dx=query_genome_length - d_x)
-
-        # print(*new_lines, sep='\n')
-
-        metric_value = countShiftMetric(lines)
-        print("k = {}, b = {}, metric_value = {}".format(k, b, metric_value))
-
-        if not apply_shift:
-
-            for line_index in range(start_line, len(lines)):
-                lines[line_index].shift(dx=d_x)
-
-            for line_index in range(0, start_line):
-                lines[line_index].shift(dx=d_x - query_genome_length)
-
-        return metric_value
-
-    best_metric_value = float("inf")
-    best_metric_value_start_line = 0
-
-    for start_line in range(len(lines)):
-
-        print("Counting for start_line = {}...".format(start_line))
-
-        cur_metric_value = countShift(lines, start_line)
-
-        if cur_metric_value < best_metric_value:
-            best_metric_value = cur_metric_value
-            best_metric_value_start_line = start_line
-
-        print()
-
-    print("Counting end result with start_line = {}...".format(best_metric_value_start_line))
-    best_metric_value = countShift(lines, best_metric_value_start_line, apply_shift=True)
-    print("best_metric_value = {}".format(best_metric_value))
-
-    lines = deque(lines)
-    for _ in range(best_metric_value_start_line):
-        lines.append(lines.popleft())
-    lines = list(lines)
-
-    # plot.clear()
-    # for line in lines:
-    #     plot.plotLine(line)
-    # plot.show()
-    # plot.clear()
-
     print("Lines:", *lines, sep='\n')
 
     # return
 # ====================================================================================================================================================================
-    # Rotations
-    print("Counting rotations...")
+    # Shift and rotations
+    print("Counting shift and rotations...")
 
-    def countRotationMetric(lines):
+    def countMetric(lines):
+        # First option:
+        # k, b = linearApproxLines(lines)
+        # main_line = Line(0, b, query_genome_length, query_genome_length * k + b)
+
+        # Second option:
+        main_line = Line(0, 0, query_genome_length, query_genome_length)
+
+        # Third option: TODO - approx with k: 1, b: search
+
+        # Fourth option: TODO - approx with k: search, b: 0
+
         result = 0
         for line in lines:
-            result += (line.start_x - line.start_y) ** 2 + (line.end_x - line.end_y) ** 2
+            result += (line.start_y - YCoordOnLine(*main_line.coords, line.start_x)) ** 2
+            result += (line.end_y - YCoordOnLine(*main_line.coords, line.end_x)) ** 2
         return result
 
-    def countRotation(lines, rotation, apply_rotation=False):
+    def countMetricWithRotation(lines, rotation, apply_rotation=False) -> int:
         # print(*([line.start_y, line.end_y] for line in lines))
 
         rotation_center = (
@@ -327,7 +266,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             line.start_y -= (line.start_y - rotation_center) * 2
             line.end_y -= (line.end_y - rotation_center) * 2
 
-        result = countRotationMetric(lines)
+        result = countMetric(lines)
 
         if not apply_rotation:
             for line_index in range(rotation.start_line, rotation.end_line + 1):
@@ -346,101 +285,172 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         return result
 
-    # ------ def countRotation ------
+    def countBestRotations(rotated_lines) -> List[Line]:
+        possible_rotations = []
+        for start_line in range(len(rotated_lines)):
+            for end_line in range(start_line, len(rotated_lines)):
+                possible_rotations.append(Rotation(start_line, end_line, (
+                    min(
+                        rotated_lines[start_line].start_y, rotated_lines[start_line].end_y,
+                        rotated_lines[end_line].start_y, rotated_lines[end_line].end_y
+                    ) + max(
+                        rotated_lines[start_line].start_y, rotated_lines[start_line].end_y,
+                        rotated_lines[end_line].start_y, rotated_lines[end_line].end_y
+                    )
+                ) // 2))
 
-    possible_rotations = []
+        # print("\nPossible rotations:", *possible_rotations, sep='\n')
 
-    for start_line in range(len(lines)):
-        for end_line in range(start_line, len(lines)):
-            rotation_center = (
-                min(
-                    lines[start_line].start_y, lines[start_line].end_y,
-                    lines[end_line].start_y, lines[end_line].end_y
-                ) + max(
-                    lines[start_line].start_y, lines[start_line].end_y,
-                    lines[end_line].start_y, lines[end_line].end_y
-                )
-            ) // 2
-            possible_rotations.append(Rotation(start_line, end_line, rotation_center))
+        cur_metric_value = countMetric(rotated_lines)
 
-    cur_metric_value = countRotationMetric(lines)
-
-    rotated_lines = deepcopy(lines)
-    rotation_actions = []
-
-    # print("\nPossible rotations:", *possible_rotations, sep='\n')
-
-    # if draw:
-    #     for line in rotated_lines:
-    #         plot.plotLine(line)
-    #     plot.save(mkpath(output_folder, "history", "x0.png"))
-    #     plot.clear()
-    #     index = 1
-
-    while True:
-        best_metric_value = float('inf')
-        best_rotation_index = 0
-
-        for i, rotation in enumerate(possible_rotations):
-
-            min_line_center, max_line_center = float('inf'), float("-inf")
-            for line_index in range(rotation.start_line, rotation.end_line + 1):
-                min_line_center = min(min_line_center, rotated_lines[line_index].center_y)
-                max_line_center = max(max_line_center, rotated_lines[line_index].center_y)
-
-            # TODO: WORKAROUND #1
-            bad = False
-            for line_index in range(len(rotated_lines)):
-                if not (rotation.start_line <= line_index <= rotation.end_line) and \
-                        min_line_center < rotated_lines[line_index].center_y < max_line_center:
-                    bad = True
-            if bad:
-                continue
-
-            # TODO: WORKAROUND #2
-            if rotated_lines[rotation.start_line].isTiltedCorrectly() or rotated_lines[rotation.end_line].isTiltedCorrectly():
-                continue
-
-            cur_metric = countRotation(rotated_lines, rotation)
-
-            if cur_metric < best_metric_value:
-                best_metric_value = cur_metric
-                best_rotation_index = i
-
-        if best_metric_value >= cur_metric_value:
-            break
-
-        print("\n{} -> {}".format(possible_rotations[best_rotation_index], cur_metric_value))
-
-        cur_metric_value = countRotation(rotated_lines, possible_rotations[best_rotation_index], apply_rotation=True)
-
-        print("best_metric_value = {}".format(best_metric_value))
-        print("best_rotation_index = {}".format(best_rotation_index))
-
-        rotation_actions.append(possible_rotations[best_rotation_index])
+        # rotated_lines = deepcopy(lines)
+        rotation_actions = []
 
         # if draw:
         #     for line in rotated_lines:
         #         plot.plotLine(line)
-        #     plot.save(mkpath(output_folder, "history", "x{}.png".format(index)))
+        #     plot.save(mkpath(output_folder, "history", "x0.png"))
         #     plot.clear()
-        #     index += 1
+        #     index = 1
 
-    print("Final metric value: ", cur_metric_value, countRotationMetric(rotated_lines))
+        while True:
+            best_metric_value = float('inf')
+            best_rotation_index = 0
 
-    print("\nRotation actions:", *rotation_actions, sep='\n')
-    print("\nRotated lines:", *rotated_lines, sep='\n')
+            for i, rotation in enumerate(possible_rotations):
+
+                # TODO: WORKAROUND #1
+                min_line_center, max_line_center = float('inf'), float("-inf")
+                for line_index in range(rotation.start_line, rotation.end_line + 1):
+                    min_line_center = min(min_line_center, rotated_lines[line_index].center_y)
+                    max_line_center = max(max_line_center, rotated_lines[line_index].center_y)
+                bad = False
+                for line_index in range(len(rotated_lines)):
+                    if not (rotation.start_line <= line_index <= rotation.end_line) and \
+                            min_line_center < rotated_lines[line_index].center_y < max_line_center:
+                        bad = True
+                if bad:
+                    continue
+
+                # TODO: WORKAROUND #2
+                if rotated_lines[rotation.start_line].isTiltedCorrectly() or rotated_lines[rotation.end_line].isTiltedCorrectly():
+                    continue
+
+                cur_metric = countMetricWithRotation(rotated_lines, rotation)
+
+                if cur_metric < best_metric_value:
+                    best_metric_value = cur_metric
+                    best_rotation_index = i
+
+            if best_metric_value >= cur_metric_value:
+                break
+
+            print("\n{} -> {}".format(possible_rotations[best_rotation_index], cur_metric_value))
+
+            cur_metric_value = countMetricWithRotation(rotated_lines, possible_rotations[best_rotation_index], apply_rotation=True)
+
+            # print("best_metric_value = {}".format(best_metric_value))
+            # print("best_rotation_index = {}".format(best_rotation_index))
+
+            rotation_actions.append(possible_rotations[best_rotation_index])
+
+            # if draw:
+            #     for line in rotated_lines:
+            #         plot.plotLine(line)
+            #     plot.save(mkpath(output_folder, "history", "x{}.png".format(index)))
+            #     plot.clear()
+            #     index += 1
+
+        # print("Final metric value: ", cur_metric_value, countMetric(rotated_lines))
+        print("\nRotation actions:", *rotation_actions, sep='\n')
+        # print("\nRotated lines:", *rotated_lines, sep='\n')
+
+        # plot.clear()
+        # for line in rotated_lines:
+        #     plot.plotLine(line)
+        # plot.show()
+        # plot.clear()
+
+        return cur_metric_value, rotated_lines, rotation_actions
+
+    def shiftLines(lines, count) -> List[Line]:
+        result = deque(lines)
+        for _ in range(count):
+            result.append(result.popleft())
+        return list(result)
+
+    def countShift(lines, start_line, apply_changes=False) -> int:
+
+        d_x = lines[start_line].start_x
+
+        # print("d_x = {}".format(d_x))
+
+        for line_index in range(start_line, len(lines)):
+            lines[line_index].shift(dx=-d_x)
+
+        for line_index in range(0, start_line):
+            lines[line_index].shift(dx=query_genome_length - d_x)
+
+        # print(*new_lines, sep='\n')
+
+        # print("\nLines:", *lines, sep='\n')
+
+        rotated_lines = shiftLines(deepcopy(lines), start_line)
+
+        # print("\nLines:", *lines, sep='\n')
+        # print("\nRotated lines:", *rotated_lines, sep='\n')
+
+        metric_value, rotated_lines, rotation_actions = countBestRotations(rotated_lines)
+
+        # print("metric_value = {}".format(metric_value))
+
+        if apply_changes:
+            lines = shiftLines(lines, start_line)
+            return metric_value, lines, rotated_lines, rotation_actions
+
+        for line_index in range(start_line, len(lines)):
+            lines[line_index].shift(dx=d_x)
+
+        for line_index in range(0, start_line):
+            lines[line_index].shift(dx=d_x - query_genome_length)
+
+        return metric_value
+
+    best_metric_value = float("inf")
+    best_metric_value_start_line = 0
+
+    for start_line in range(len(lines)):
+
+        print("\n-| Counting for start_line = {}...".format(start_line))
+
+        cur_metric_value = countShift(lines, start_line)
+
+        if cur_metric_value < best_metric_value:
+            best_metric_value = cur_metric_value
+            best_metric_value_start_line = start_line
+
+    print("\n===| Counting end result with start_line = {}...".format(best_metric_value_start_line))
+    best_metric_value, lines, rotated_lines, rotation_actions = countShift(lines, best_metric_value_start_line, apply_changes=True)
+    # print("best_metric_value = {}".format(best_metric_value))
+
+    # lines = deque(lines)
+    # for _ in range(best_metric_value_start_line):
+    #     lines.append(lines.popleft())
+    # lines = list(lines)
 
     # plot.clear()
-    # for line in rotated_lines:
+    # for line in lines:
     #     plot.plotLine(line)
     # plot.show()
     # plot.clear()
 
+    print("\nLines:", *lines, sep='\n')
+    print("\nRotated lines:", *rotated_lines, sep='\n')
+
     # return
 # ====================================================================================================================================================================
     # Handle events
-    print("Handling events...")
+    print("\nHandling events...")
 
     actions = []
 
@@ -485,6 +495,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             plot.line(cur.start_x, last.end_y, cur.start_x, cur.start_y, color="#0ff")
 
         else:
+            # print([cur.start_x, last.end_x], [cur.start_y, last.end_y])
             print("\nUnknown action!!!\n")
 
         if cur.end_x >= last.end_x:
