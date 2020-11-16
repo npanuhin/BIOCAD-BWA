@@ -402,11 +402,11 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         metric_value, rotated_lines, rotation_actions = countBestRotations(rotated_lines)
 
-        # print("metric_value = {}".format(metric_value))
+        print("metric_value = {} or {}".format(metric_value, metric_value * len(rotation_actions)))
 
         if apply_changes:
             lines = shiftLines(lines, start_line)
-            return metric_value, lines, rotated_lines, rotation_actions
+            return lines, rotated_lines, rotation_actions
 
         for line_index in range(start_line, len(lines)):
             lines[line_index].shift(dx=d_x)
@@ -414,7 +414,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         for line_index in range(0, start_line):
             lines[line_index].shift(dx=d_x - query_genome_length)
 
-        return metric_value
+        return metric_value * len(rotation_actions)
 
     best_metric_value = float("inf")
     best_metric_value_start_line = 0
@@ -430,8 +430,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
             best_metric_value_start_line = start_line
 
     print("\n===| Counting end result with start_line = {}...".format(best_metric_value_start_line))
-    best_metric_value, lines, rotated_lines, rotation_actions = countShift(lines, best_metric_value_start_line, apply_changes=True)
-    # print("best_metric_value = {}".format(best_metric_value))
+    lines, rotated_lines, rotation_actions = countShift(lines, best_metric_value_start_line, apply_changes=True)
 
     # lines = deque(lines)
     # for _ in range(best_metric_value_start_line):
