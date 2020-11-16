@@ -12,6 +12,7 @@ from utils import mkpath, prtNum, distance2, linearApproxDots, linearApproxLines
 from Line import Line
 from Plot import Plot
 from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pass
+from remove_cache import removePythonCache
 
 # INT_MAX = int(1e9) + 7
 
@@ -692,4 +693,6 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
 
 if __name__ == "__main__":
+    removePythonCache("./")
     analyze(query_genome_path, ref_genome_path, sam_file_path, show_plot, output_folder, SETTINGS)
+    removePythonCache("./")
