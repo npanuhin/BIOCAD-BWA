@@ -1,20 +1,12 @@
-Rotation from 623'890 (Query) to 748'380 (Query)
+Rotation from 622'800 (Query) to 747'290 (Query)
 
-Rotation from 690'010 (Query) to 712'570 (Query)
+Rotation from 688'920 (Query) to 711'480 (Query)
 
-Translocation of 667'280-END (Query) from 545'170 (Ref) to 601'009 (Ref)
+Translocation of 666'190-END (Query) from 545'170 (Ref) to 601'009 (Ref)
 
-Insertion of 560'030-604'571 (Ref) to 686'820 (Query)
+Insertion of 560'030-604'571 (Ref) to 685'730 (Query)
 
-Insertion of 876'877-903'163 (Ref) to 1'009'530 (Query)
+Insertion of 876'477-901'479 (Ref) to 1'008'440 (Query)
 
-Insertion of 642'362-664'468 (Ref) to 748'380 (Query)
-
-Deletion of 712'570-731'260 (Query) from 625'691 (Ref)
-
-Deletion of 1'009'530-1'023'770 (Query) from 876'877 (Ref)
-
-Deletion of 1'040'300-1'052'090 (Query) from 916'632 (Ref)
-
-Insertion of 554'060-565'278 (Ref) to 620'020 (Query)
+Insertion of 642'362-663'770 (Ref) to 747'290 (Query)
 

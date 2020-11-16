@@ -29,7 +29,7 @@ def main():
     }
 
     for foldername in os.listdir(mkpath("tests", "small")):
-        break
+        # break
         sam_analyze.analyze(
             query_genome_path="samples/small/source.fasta",
             ref_genome_path="samples/small/{}.fasta".format(foldername),

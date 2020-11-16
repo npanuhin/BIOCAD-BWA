@@ -1,6 +1,4 @@
-Rotation from 10 (Query) to 1'168'850 (Query)
+Rotation from 0 (Query) to 1'255'671 (Query)
 
-Rotation from 1'168'860 (Query) to 1'255'680 (Query)
-
-Insertion of 378'624-389'481 (Ref) to 379'050 (Query)
+Insertion of 466'638-477'495 (Ref) to 465'871 (Query)
 
