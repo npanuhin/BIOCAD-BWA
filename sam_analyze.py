@@ -2,7 +2,6 @@ from typing import List
 from string import ascii_uppercase
 from Bio.SeqIO.FastaIO import SimpleFastaParser
 from json import load as json_load  # , dump as json_dump
-from collections import deque
 from copy import deepcopy
 import os
 
@@ -10,7 +9,7 @@ import sys
 sys.path.append("src")
 from utils import mkpath, prtNum, distance2, linearApproxDots, linearApproxLines, YCoordOnLine, setSettings
 
-from Line import Line
+from Line import Line, shiftLines
 from Plot import Plot
 from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pass
 from remove_cache import removePythonCache
@@ -230,26 +229,31 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     print("Counting shift and rotations...")
 
     def countMetric(lines):
+        result = 0
+
         # First option:
         # k, b = linearApproxLines(lines)
         # main_line = Line(0, b, query_genome_length, query_genome_length * k + b)
 
         # Second option:
-        main_line = Line(0, 0, query_genome_length, query_genome_length)
+        # main_line = Line(0, 0, query_genome_length, query_genome_length) -> Second "for" option
 
         # Third option: TODO - approx with k: 1, b: search
 
         # Fourth option: TODO - approx with k: search, b: 0
 
-        result = 0
+        # First "for" option:
+        # for line in lines:
+        #     result += int((line.start_y - YCoordOnLine(*main_line.coords, line.start_x)) ** 2)
+        #     result += int((line.end_y - YCoordOnLine(*main_line.coords, line.end_x)) ** 2)
+
+        # Second "for" option:
         for line in lines:
-            result += (line.start_y - YCoordOnLine(*main_line.coords, line.start_x)) ** 2
-            result += (line.end_y - YCoordOnLine(*main_line.coords, line.end_x)) ** 2
+            result += int((line.start_y - line.start_x) ** 2) + int((line.end_y - line.end_x) ** 2)
+
         return result
 
     def countMetricWithRotation(lines, rotation, apply_rotation=False) -> int:
-        # print(*([line.start_y, line.end_y] for line in lines))
-
         rotation_center = (
             min(
                 lines[rotation.start_line].start_y, lines[rotation.start_line].end_y,
@@ -261,27 +265,18 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         ) // 2
 
         for line_index in range(rotation.start_line, rotation.end_line + 1):
-            line = lines[line_index]
-
-            line.start_y -= (line.start_y - rotation_center) * 2
-            line.end_y -= (line.end_y - rotation_center) * 2
+            lines[line_index].rotateY(rotation_center)
 
         result = countMetric(lines)
 
         if not apply_rotation:
             for line_index in range(rotation.start_line, rotation.end_line + 1):
-                line = lines[line_index]
-
-                line.start_y -= (line.start_y - rotation_center) * 2
-                line.end_y -= (line.end_y - rotation_center) * 2
+                lines[line_index].rotateY(rotation_center)
 
         if apply_rotation:
             rotation.rotation_center = rotation_center
-
             for line_index in range(rotation.start_line, rotation.end_line + 1):
-                line = lines[line_index]
-                for j in range(len(line.dots)):
-                    line.dots[j][1] -= (line.dots[j][1] - rotation_center) * 2
+                lines[line_index].rotateY(rotation_center, line=False, dots=True)
 
         return result
 
@@ -289,21 +284,11 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         possible_rotations = []
         for start_line in range(len(rotated_lines)):
             for end_line in range(start_line, len(rotated_lines)):
-                possible_rotations.append(Rotation(start_line, end_line, (
-                    min(
-                        rotated_lines[start_line].start_y, rotated_lines[start_line].end_y,
-                        rotated_lines[end_line].start_y, rotated_lines[end_line].end_y
-                    ) + max(
-                        rotated_lines[start_line].start_y, rotated_lines[start_line].end_y,
-                        rotated_lines[end_line].start_y, rotated_lines[end_line].end_y
-                    )
-                ) // 2))
+                possible_rotations.append(Rotation(start_line, end_line))
 
         # print("\nPossible rotations:", *possible_rotations, sep='\n')
 
         cur_metric_value = countMetric(rotated_lines)
-
-        # rotated_lines = deepcopy(lines)
         rotation_actions = []
 
         # if draw:
@@ -332,7 +317,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                 if bad:
                     continue
 
-                # TODO: WORKAROUND #2
+                # TODO: WORKAROUND-CONDITION #2
                 if rotated_lines[rotation.start_line].isTiltedCorrectly() or rotated_lines[rotation.end_line].isTiltedCorrectly():
                     continue
 
@@ -373,25 +358,14 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
         return cur_metric_value, rotated_lines, rotation_actions
 
-    def shiftLines(lines, count) -> List[Line]:
-        result = deque(lines)
-        for _ in range(count):
-            result.append(result.popleft())
-        return list(result)
-
     def countShift(lines, start_line, apply_changes=False) -> int:
-
         d_x = lines[start_line].start_x
-
-        # print("d_x = {}".format(d_x))
 
         for line_index in range(start_line, len(lines)):
             lines[line_index].shift(dx=-d_x)
 
         for line_index in range(0, start_line):
             lines[line_index].shift(dx=query_genome_length - d_x)
-
-        # print(*new_lines, sep='\n')
 
         # print("\nLines:", *lines, sep='\n')
 
@@ -405,8 +379,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         print("metric_value = {} or {}".format(metric_value, metric_value * len(rotation_actions)))
 
         if apply_changes:
-            lines = shiftLines(lines, start_line)
-            return lines, rotated_lines, rotation_actions
+            return shiftLines(lines, start_line), rotated_lines, rotation_actions
 
         for line_index in range(start_line, len(lines)):
             lines[line_index].shift(dx=d_x)
@@ -420,7 +393,6 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     best_metric_value_start_line = 0
 
     for start_line in range(len(lines)):
-
         print("\n-| Counting for start_line = {}...".format(start_line))
 
         cur_metric_value = countShift(lines, start_line)
@@ -431,11 +403,6 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
 
     print("\n===| Counting end result with start_line = {}...".format(best_metric_value_start_line))
     lines, rotated_lines, rotation_actions = countShift(lines, best_metric_value_start_line, apply_changes=True)
-
-    # lines = deque(lines)
-    # for _ in range(best_metric_value_start_line):
-    #     lines.append(lines.popleft())
-    # lines = list(lines)
 
     # plot.clear()
     # for line in lines:
@@ -500,8 +467,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
         if cur.end_x >= last.end_x:
             last = cur
 
-    large_actions = [action for action in actions if action.size >= settings["min_event_size"]]
-    large_actions.sort(key=lambda action: -action.size)
+    large_actions = sorted([action for action in actions if action.size >= settings["min_event_size"]], key=lambda action: -action.size)
 
     print("\nActions:", *actions, sep='\n')
     print("\nLarge_actions:", *large_actions, sep='\n')
@@ -593,14 +559,8 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
     for action_index, action in enumerate(large_actions):
 
         if isinstance(action, Rotation):
-
-            for i in range(action.start_line, action.end_line + 1):
-                for j in range(len(lines[i].dots)):
-                    lines[i].dots[j][1] -= (lines[i].dots[j][1] - action.rotation_center) * 2
-
-            # for i in range(len(dots)):
-            #     if start_query_pos <= dots[i][0] <= start_query_pos + length:
-            #         dots[i][1] = dots[i][1] - (dots[i][1] - action.rotation_center) * 2
+            for line_index in range(action.start_line, action.end_line + 1):
+                lines[line_index].rotateY(action.rotation_center, line=False, dots=True)
 
         elif isinstance(action, Insertion):
             for line in rotated_lines:
@@ -676,8 +636,7 @@ def analyze(query_genome_path: str, ref_genome_path: str, sam_file_path: str, sh
                     bottom = min(bottom, dot_y)
 
             for line in rotated_lines:
-                for i in range(len(line.dots)):
-                    line.dots[i][1] -= bottom
+                line.shift(dy=-bottom)
 
             for i in range(action_index + 1, len(large_actions)):
                 if hasattr(large_actions[i], "start_x") and hasattr(large_actions[i], "start_y") and \

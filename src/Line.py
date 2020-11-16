@@ -1,3 +1,7 @@
+from typing import List  # , Optional
+from collections import deque
+
+
 class Line:
     """
     Properties:
@@ -71,3 +75,19 @@ class Line:
         for i in range(len(self.dots)):
             self.dots[i][0] += dx
             self.dots[i][1] += dy
+
+    def rotateY(self, rotation_center, line=True, dots=False):
+        if line:
+            self.start_y -= (self.start_y - rotation_center) * 2
+            self.end_y -= (self.end_y - rotation_center) * 2
+
+        if dots:
+            for i in range(len(self.dots)):
+                self.dots[i][1] -= (self.dots[i][1] - rotation_center) * 2
+
+
+def shiftLines(lines, count) -> List[Line]:
+    result = deque(lines)
+    for _ in range(count):
+        result.append(result.popleft())
+    return list(result)
