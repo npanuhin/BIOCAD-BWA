@@ -7,12 +7,15 @@ import os
 
 import sys
 sys.path.append("src")
-from utils import mkpath, prtNum, distance2, linearApproxDots, linearApproxLines, YCoordOnLine, setSettings
+from utils import mkpath, prtNum, distance2, linearApproxDots, linearApproxLines, YCoordOnLine, setSettings, removePythonCache
 
 from Line import Line, shiftLines
 from Plot import Plot
-from events import Rotation, Insertion, Deletion, Translocation, Duplication, Pass
-from remove_cache import removePythonCache
+from Events import Rotation, Insertion, Deletion, Translocation, Duplication, Pass
+
+
+CIGAR_FLAGS_PATH = mkpath("src", "STORAGE", "CIGAR_FLAGS.json")
+
 
 # INT_MAX = int(1e9) + 7
 
@@ -50,7 +53,7 @@ SETTINGS = {
     "line_min_size": "$min_event_size"
 }
 
-with open(mkpath("src", "CIGAR_FLAGS.json"), 'r', encoding="utf-8") as file:
+with open(CIGAR_FLAGS_PATH, 'r', encoding="utf-8") as file:
     CIGAR_FLAGS = json_load(file, encoding="utf-8")
 
 

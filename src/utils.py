@@ -1,11 +1,20 @@
 from os.path import normpath as os_normpath, join as os_join, exists as os_exists
 from json import load as json_load
+from os import walk as os_walk
+from shutil import rmtree
 # from threading import Thread, Lock
 # from functools import wraps
 
 
 def mkpath(*paths):
     return os_normpath(os_join(*paths))
+
+
+def removePythonCache(root="../"):
+    for cur_path, folders, files in os_walk(root):
+        for folder in folders:
+            if folder == "__pycache__":
+                rmtree(mkpath(cur_path, folder))
 
 
 def prtNum(num):
@@ -104,3 +113,8 @@ def setSettings(settings, alternative_settings_path=None):
 #     def saveTarget(self):
 #         self.target()
 #         self.finished = True
+
+
+if __name__ == "__main__":
+    print("Removing python cache...")
+    removePythonCache()

@@ -6,7 +6,7 @@ os.chdir("../")
 sys_path.append(".")
 
 import sam_analyze
-from remove_cache import removePythonCache
+from utils import removePythonCache
 
 
 def mkpath(*paths):
