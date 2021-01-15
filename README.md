@@ -1,5 +1,7 @@
 <h1 align="center">BWA and SAM analysis</h1>
 
+> This repository is no longer maintained and will be archived soon. Please refer to [npanuhin/BIOCAD](https://github.com/npanuhin/BIOCAD) for a continuation of this project.
+
 > This repository is not intended to represent work, but rather to store and transmit data.
 
 ## Analysis status
