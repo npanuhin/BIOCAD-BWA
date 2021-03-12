@@ -1,6 +1,6 @@
 <h1 align="center">BWA and SAM analysis</h1>
 
-> This repository is no longer maintained and will be archived soon. Please refer to [npanuhin/BIOCAD](https://github.com/npanuhin/BIOCAD) for a continuation of this project.
+> This repository is no longer maintained. Please refer to [npanuhin/BIOCAD](https://github.com/npanuhin/BIOCAD) for a continuation of this project.
 
 > This repository is not intended to represent work, but rather to store and transmit data.
 
@@ -25,6 +25,11 @@
 - ✅ large11
 - ❌ large12
 - ✅ small (BWA⚠)
+
+
+## Additional scripts
+
+This repository also [includes](./src/Alignment) implementations of various algorithms written in `C++` such as [Burrows–Wheeler transform](./src/Alignment/BWT.cpp), [Knuth–Morris–Pratt algorithm](./src/Alignment/KMP.cpp) and [k-mers compression](./src/Alignment/k-mers.cpp).
 
 
 ## How BWA works now
